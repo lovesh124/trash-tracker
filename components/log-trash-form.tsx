@@ -49,18 +49,35 @@ export function LogTrashForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+
     setCompressing(true);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
     try {
       const compressed = await imageCompression(file, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1600,
+        maxSizeMB: 0.8,
+        maxWidthOrHeight: 1200,
+        maxIteration: 3,
+        initialQuality: 0.8,
         useWebWorker: false,
+        signal: controller.signal,
       });
       setPhoto(compressed);
       setPhotoPreview(URL.createObjectURL(compressed));
-    } catch {
-      toast.error("Couldn't process that photo, try a different one");
+    } catch (error) {
+      toast.error(
+        controller.signal.aborted
+          ? "That photo took too long to process. Try a smaller image."
+          : error instanceof Error
+            ? error.message
+            : "Couldn't process that photo, try a different one"
+      );
     } finally {
+      window.clearTimeout(timeoutId);
       setCompressing(false);
     }
   }
