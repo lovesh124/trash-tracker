@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { History, Loader2 } from "lucide-react";
+import { History } from "lucide-react";
 import { TurnCard } from "@/components/turn-card";
 import { LogTrashForm } from "@/components/log-trash-form";
 import { Button } from "@/components/ui/button";
@@ -39,23 +39,26 @@ export default function Home() {
   }, [load]);
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 sm:py-10">
       <header className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">🗑️ Trash Tracker</h1>
-        <Button variant="ghost" size="sm" render={<Link href="/history" />}>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">🗑️ Trash Tracker</h1>
+        </div>
+        <Button variant="ghost" size="sm" className="h-10 px-3" render={<Link href="/history" />}>
           <History className="size-4" />
           History
         </Button>
       </header>
 
       {loading && (
-        <div className="flex flex-1 items-center justify-center py-16">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col gap-4 py-10" role="status" aria-label="Loading tracker">
+          <div className="h-64 animate-pulse rounded-xl bg-muted" />
+          <div className="mx-auto h-4 w-32 animate-pulse rounded-full bg-muted" />
         </div>
       )}
 
       {!loading && error && (
-        <p className="rounded-lg bg-destructive/10 p-4 text-center text-sm text-destructive">
+          <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-center text-sm text-destructive">
           Couldn&apos;t load the tracker. Check your connection and try again.
         </p>
       )}

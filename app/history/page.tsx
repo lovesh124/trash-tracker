@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Clock3, Loader2 } from "lucide-react";
 import { LogHistoryItem } from "@/components/log-history-item";
 import { Button } from "@/components/ui/button";
 import type { TrashLogWithRoommate } from "@/lib/supabase/types";
@@ -44,8 +44,8 @@ export default function HistoryPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 px-4 py-8">
-      <header className="flex items-center gap-2">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-7 px-4 py-6 sm:px-6 sm:py-10">
+      <header className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon-sm"
@@ -54,12 +54,19 @@ export default function HistoryPage() {
         >
           <ArrowLeft className="size-4" />
         </Button>
-        <h1 className="text-lg font-semibold tracking-tight">History</h1>
+        <div>
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            <Clock3 className="size-3.5" /> Household record
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">History</h1>
+        </div>
       </header>
 
       {loading && (
-        <div className="flex flex-1 items-center justify-center py-16">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col gap-3 py-10" role="status" aria-label="Loading history">
+          <div className="h-16 animate-pulse rounded-xl bg-muted" />
+          <div className="h-16 animate-pulse rounded-xl bg-muted" />
+          <div className="h-16 animate-pulse rounded-xl bg-muted" />
         </div>
       )}
 
@@ -70,13 +77,13 @@ export default function HistoryPage() {
       )}
 
       {!loading && !error && logs.length === 0 && (
-        <p className="py-16 text-center text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-primary/25 bg-card/60 px-6 py-16 text-center text-sm text-muted-foreground">
           No logs yet. Be the first to take out the trash!
         </p>
       )}
 
       {!loading && !error && logs.length > 0 && (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-3">
           {logs.map((log) => (
             <LogHistoryItem key={log.id} log={log} />
           ))}
@@ -84,7 +91,7 @@ export default function HistoryPage() {
       )}
 
       {!loading && hasMore && (
-        <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+        <Button variant="outline" className="h-11 w-full" onClick={loadMore} disabled={loadingMore}>
           {loadingMore && <Loader2 className="size-4 animate-spin" />}
           Load more
         </Button>
