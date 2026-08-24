@@ -1,0 +1,202 @@
+"use client";
+
+import { useRef, useState } from "react";
+import imageCompression from "browser-image-compression";
+import { Camera, Loader2, X } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { Roommate } from "@/lib/supabase/types";
+
+export function LogTrashForm({
+  roommates,
+  onLogged,
+}: {
+  roommates: Roommate[];
+  onLogged: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [roommateId, setRoommateId] = useState<string>("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function resetForm() {
+    setRoommateId("");
+    setPhoto(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCompressing(true);
+    try {
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+      });
+      setPhoto(compressed);
+      setPhotoPreview(URL.createObjectURL(compressed));
+    } catch {
+      toast.error("Couldn't process that photo, try a different one");
+    } finally {
+      setCompressing(false);
+    }
+  }
+
+  function clearPhoto() {
+    setPhoto(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function handleSubmit() {
+    if (!roommateId) {
+      toast.error("Pick who's logging this");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.set("roommate_id", roommateId);
+      if (photo) formData.set("photo", photo);
+
+      const res = await fetch("/api/logs", { method: "POST", body: formData });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Failed to submit log");
+      }
+
+      toast.success("Trash log recorded!");
+      resetForm();
+      setOpen(false);
+      onLogged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) resetForm();
+      }}
+    >
+      <Button size="lg" className="w-full" onClick={() => setOpen(true)}>
+        Log Trash Taken
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Log trash taken out</DialogTitle>
+          <DialogDescription>
+            Pick who took it out. Adding a photo is optional.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="roommate">Who took it out?</Label>
+            <Select
+              value={roommateId}
+              onValueChange={(value) => setRoommateId(value ?? "")}
+            >
+              <SelectTrigger id="roommate" className="w-full">
+                <SelectValue placeholder="Select a roommate" />
+              </SelectTrigger>
+              <SelectContent>
+                {roommates.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="photo">Proof photo (optional)</Label>
+            {photoPreview ? (
+              <div className="relative w-fit">
+                {/* eslint-disable-next-line @next/next/no-img-element -- local object URL preview, not a remote asset */}
+                <img
+                  src={photoPreview}
+                  alt="Selected proof"
+                  className="h-32 w-32 rounded-lg object-cover ring-1 ring-foreground/10"
+                />
+                <button
+                  type="button"
+                  onClick={clearPhoto}
+                  className="absolute -top-2 -right-2 rounded-full bg-background p-1 ring-1 ring-foreground/10"
+                  aria-label="Remove photo"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={compressing}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {compressing ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Camera className="size-4" />
+                )}
+                {compressing ? "Processing..." : "Add a photo"}
+              </Button>
+            )}
+            <input
+              ref={fileInputRef}
+              id="photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              capture="environment"
+              className="hidden"
+              onChange={handlePhotoChange}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || compressing || !roommateId}
+            className="w-full sm:w-auto"
+          >
+            {submitting && <Loader2 className="size-4 animate-spin" />}
+            Submit log
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
