@@ -54,7 +54,7 @@ export function LogTrashForm({
       const compressed = await imageCompression(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 1600,
-        useWebWorker: true,
+        useWebWorker: false,
       });
       setPhoto(compressed);
       setPhotoPreview(URL.createObjectURL(compressed));
@@ -123,6 +123,7 @@ export function LogTrashForm({
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="roommate">Who took it out?</Label>
             <Select
+              items={roommates.map((r) => ({ value: r.id, label: r.name }))}
               value={roommateId}
               onValueChange={(value) => setRoommateId(value ?? "")}
             >
