@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import { HandCoins, Receipt } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { formatCents } from "@/lib/money";
 import type { ActivityItem } from "@/lib/supabase/types";
 
@@ -7,6 +11,35 @@ function formatDateTime(iso: string) {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function SettlementProofThumbnail({ proofUrl, label }: { proofUrl: string; label: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        aria-label="View payment proof"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- remote Supabase Storage URL, not a static local asset */}
+        <img
+          src={proofUrl}
+          alt={label}
+          className="size-9 rounded-lg object-cover ring-1 ring-foreground/10"
+        />
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-lg" showCloseButton>
+          <DialogTitle>{label}</DialogTitle>
+          {/* eslint-disable-next-line @next/next/no-img-element -- remote Supabase Storage URL, not a static local asset */}
+          <img src={proofUrl} alt={label} className="w-full rounded-lg object-contain" />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
 
 export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
@@ -29,13 +62,20 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
               key={`${item.type}-${item.id}`}
               className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-[0_8px_24px_-20px_oklch(0.3_0.06_145)] ring-1 ring-foreground/10"
             >
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                {item.type === "expense" ? (
-                  <Receipt className="size-4" />
-                ) : (
-                  <HandCoins className="size-4" />
-                )}
-              </div>
+              {item.type === "settlement" && item.proofUrl ? (
+                <SettlementProofThumbnail
+                  proofUrl={item.proofUrl}
+                  label={`Proof that ${item.from.name} paid ${item.to.name}`}
+                />
+              ) : (
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                  {item.type === "expense" ? (
+                    <Receipt className="size-4" />
+                  ) : (
+                    <HandCoins className="size-4" />
+                  )}
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 {item.type === "expense" ? (
                   <p className="truncate text-sm">

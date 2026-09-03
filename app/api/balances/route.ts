@@ -13,7 +13,7 @@ export async function GET() {
       .select("roommate_id, amount_cents, expense:expenses(payer_id)"),
     supabaseServer
       .from("settlements")
-      .select("id, from_roommate_id, to_roommate_id, amount_cents, created_at, from:roommates!settlements_from_roommate_id_fkey(id, name), to:roommates!settlements_to_roommate_id_fkey(id, name)")
+      .select("id, from_roommate_id, to_roommate_id, amount_cents, proof_url, created_at, from:roommates!settlements_from_roommate_id_fkey(id, name), to:roommates!settlements_to_roommate_id_fkey(id, name)")
       .order("created_at", { ascending: false })
       .limit(ACTIVITY_LIMIT),
     supabaseServer
@@ -94,6 +94,7 @@ export async function GET() {
   type SettlementRow = {
     id: string;
     amount_cents: number;
+    proof_url: string | null;
     created_at: string;
     from: Pick<Roommate, "id" | "name"> | Pick<Roommate, "id" | "name">[] | null;
     to: Pick<Roommate, "id" | "name"> | Pick<Roommate, "id" | "name">[] | null;
@@ -112,6 +113,7 @@ export async function GET() {
           from,
           to,
           amountCents: settlement.amount_cents,
+          proofUrl: settlement.proof_url,
         },
       ];
     }

@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
 import { PHOTO_BUCKET, supabaseServer } from "@/lib/supabase/server";
+import { PhotoValidationError, uploadProofPhoto } from "@/lib/supabase/photo-upload";
 
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
-const ALLOWED_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const PAGE_SIZE = 20;
 
 export async function GET(request: Request) {
@@ -54,34 +52,17 @@ export async function POST(request: Request) {
   let photoUrl: string | null = null;
 
   if (photo instanceof File && photo.size > 0) {
-    if (!ALLOWED_PHOTO_TYPES.has(photo.type)) {
+    try {
+      photoUrl = await uploadProofPhoto(PHOTO_BUCKET, roommateId, photo);
+    } catch (err) {
+      if (err instanceof PhotoValidationError) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
       return NextResponse.json(
-        { error: "Photo must be a JPEG, PNG, or WEBP image" },
-        { status: 400 }
+        { error: err instanceof Error ? err.message : "Upload failed" },
+        { status: 500 }
       );
     }
-    if (photo.size > MAX_PHOTO_BYTES) {
-      return NextResponse.json({ error: "Photo must be under 5MB" }, { status: 400 });
-    }
-
-    const extension = photo.type.split("/")[1];
-    const path = `${roommateId}/${randomUUID()}.${extension}`;
-
-    const { error: uploadError } = await supabaseServer.storage
-      .from(PHOTO_BUCKET)
-      .upload(path, await photo.arrayBuffer(), {
-        contentType: photo.type,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
-    }
-
-    const { data: publicUrlData } = supabaseServer.storage
-      .from(PHOTO_BUCKET)
-      .getPublicUrl(path);
-    photoUrl = publicUrlData.publicUrl;
   }
 
   const { data: log, error: insertError } = await supabaseServer

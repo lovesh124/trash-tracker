@@ -47,6 +47,7 @@ export type Settlement = {
   from_roommate_id: string;
   to_roommate_id: string;
   amount_cents: number;
+  proof_url: string | null;
   created_at: string;
 };
 
@@ -72,4 +73,5 @@ export type ActivityItem =
       from: Pick<Roommate, "id" | "name">;
       to: Pick<Roommate, "id" | "name">;
       amountCents: number;
+      proofUrl: string | null;
     };

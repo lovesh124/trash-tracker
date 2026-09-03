@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { PAYMENT_PROOF_BUCKET, supabaseServer } from "@/lib/supabase/server";
 import { computeBalances, findPairBalance, type DebtEntry } from "@/lib/balances";
+import { PhotoValidationError, uploadProofPhoto } from "@/lib/supabase/photo-upload";
 import type { Roommate } from "@/lib/supabase/types";
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => null);
-
-  const fromRoommateId = body?.from_roommate_id;
-  const toRoommateId = body?.to_roommate_id;
+  const formData = await request.formData();
+  const fromRoommateId = formData.get("from_roommate_id");
+  const toRoommateId = formData.get("to_roommate_id");
+  const proof = formData.get("proof");
 
   if (typeof fromRoommateId !== "string" || fromRoommateId.length === 0) {
     return NextResponse.json({ error: "from_roommate_id is required" }, { status: 400 });
@@ -72,12 +73,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "This balance is already settled" }, { status: 409 });
   }
 
+  let proofUrl: string | null = null;
+
+  if (proof instanceof File && proof.size > 0) {
+    try {
+      proofUrl = await uploadProofPhoto(PAYMENT_PROOF_BUCKET, fromRoommateId, proof);
+    } catch (err) {
+      if (err instanceof PhotoValidationError) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Upload failed" },
+        { status: 500 }
+      );
+    }
+  }
+
   const { data: settlement, error: insertError } = await supabaseServer
     .from("settlements")
     .insert({
       from_roommate_id: fromRoommateId,
       to_roommate_id: toRoommateId,
       amount_cents: pairBalance.amountCents,
+      proof_url: proofUrl,
     })
     .select(
       "*, from:roommates!settlements_from_roommate_id_fkey(id, name), to:roommates!settlements_to_roommate_id_fkey(id, name)"
