@@ -1,0 +1,76 @@
+import type { Roommate } from "@/lib/supabase/types";
+
+type NamedRoommate = Pick<Roommate, "id" | "name">;
+
+export type DebtEntry = {
+  /** The roommate who owes money. */
+  owerId: string;
+  /** The roommate who is owed money. */
+  creditorId: string;
+  amountCents: number;
+};
+
+export type Balance = {
+  fromRoommate: NamedRoommate;
+  toRoommate: NamedRoommate;
+  amountCents: number;
+};
+
+/**
+ * Nets a list of signed debts (expense splits owed to a payer, minus settlement
+ * payments) down to one balance per pair, so bidirectional debts collapse into
+ * a single non-zero amount instead of showing both directions at once.
+ */
+export function computeBalances(
+  debts: DebtEntry[],
+  roommatesById: Map<string, NamedRoommate>
+): Balance[] {
+  const ledger = new Map<string, Map<string, number>>();
+
+  for (const { owerId, creditorId, amountCents } of debts) {
+    if (!ledger.has(owerId)) ledger.set(owerId, new Map());
+    const row = ledger.get(owerId)!;
+    row.set(creditorId, (row.get(creditorId) ?? 0) + amountCents);
+  }
+
+  const seenPairs = new Set<string>();
+  const balances: Balance[] = [];
+
+  for (const [owerId, row] of ledger) {
+    for (const creditorId of row.keys()) {
+      const pairKey = [owerId, creditorId].sort().join(":");
+      if (seenPairs.has(pairKey)) continue;
+      seenPairs.add(pairKey);
+
+      const aOwesB = ledger.get(owerId)?.get(creditorId) ?? 0;
+      const bOwesA = ledger.get(creditorId)?.get(owerId) ?? 0;
+      const net = aOwesB - bOwesA;
+
+      if (net === 0) continue;
+
+      const [owerFinal, creditorFinal] = net > 0 ? [owerId, creditorId] : [creditorId, owerId];
+      const owerRoommate = roommatesById.get(owerFinal);
+      const creditorRoommate = roommatesById.get(creditorFinal);
+      if (!owerRoommate || !creditorRoommate) continue;
+
+      balances.push({
+        fromRoommate: owerRoommate,
+        toRoommate: creditorRoommate,
+        amountCents: Math.abs(net),
+      });
+    }
+  }
+
+  return balances;
+}
+
+/** Finds the current net balance for one specific (ower -> creditor) pair, if any. */
+export function findPairBalance(
+  balances: Balance[],
+  fromRoommateId: string,
+  toRoommateId: string
+): Balance | undefined {
+  return balances.find(
+    (b) => b.fromRoommate.id === fromRoommateId && b.toRoommate.id === toRoommateId
+  );
+}

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { History } from "lucide-react";
 import { TurnCard } from "@/components/turn-card";
 import { LogTrashForm } from "@/components/log-trash-form";
+import { ExpensesSection } from "@/components/expenses-section";
 import { Button } from "@/components/ui/button";
 import type { CurrentTurn, Roommate } from "@/lib/supabase/types";
 
@@ -67,6 +68,7 @@ export default function Home() {
         <>
           <TurnCard turn={turn} />
           <LogTrashForm roommates={roommates} onLogged={load} />
+          <ExpensesSection roommates={roommates} />
         </>
       )}
     </main>
