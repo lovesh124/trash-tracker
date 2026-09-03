@@ -1,6 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { PHOTO_BUCKET, supabaseServer } from "@/lib/supabase/server";
 import { PhotoValidationError, uploadProofPhoto } from "@/lib/supabase/photo-upload";
+import { sendTurnReminderEmail } from "@/lib/email";
+import { getNextRoommate } from "@/lib/turn";
+import type { Roommate } from "@/lib/supabase/types";
 
 const PAGE_SIZE = 20;
 
@@ -73,6 +76,25 @@ export async function POST(request: Request) {
 
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
+  }
+
+  const { data: allRoommates } = await supabaseServer
+    .from("roommates")
+    .select("id, name, order_index, email")
+    .order("order_index", { ascending: true });
+
+  if (allRoommates) {
+    const nextRoommate = getNextRoommate(allRoommates as Roommate[], roommateId);
+    if (nextRoommate.id !== roommateId && nextRoommate.email) {
+      const email = nextRoommate.email;
+      after(async () => {
+        try {
+          await sendTurnReminderEmail(email, nextRoommate.name);
+        } catch (err) {
+          console.error("Failed to send turn reminder email:", err);
+        }
+      });
+    }
   }
 
   return NextResponse.json({ log }, { status: 201 });

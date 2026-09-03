@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { getNextRoommate } from "@/lib/turn";
 import type { Roommate, TrashLogWithRoommate } from "@/lib/supabase/types";
 
 export async function GET() {
   const { data: roommates, error: roommatesError } = await supabaseServer
     .from("roommates")
-    .select("*")
+    .select("id, name, order_index")
     .order("order_index", { ascending: true });
 
   if (roommatesError || !roommates || roommates.length === 0) {
@@ -29,13 +30,10 @@ export async function GET() {
   const typedRoommates = roommates as Roommate[];
   const typedLastLog = lastLog as TrashLogWithRoommate | null;
 
-  const nextIndex = typedLastLog
-    ? (typedRoommates.findIndex((r) => r.id === typedLastLog.roommate_id) + 1) %
-      typedRoommates.length
-    : 0;
+  const nextRoommate = getNextRoommate(typedRoommates, typedLastLog?.roommate_id ?? null);
 
   return NextResponse.json({
-    roommate: typedRoommates[nextIndex],
+    roommate: nextRoommate,
     lastLog: typedLastLog,
   });
 }

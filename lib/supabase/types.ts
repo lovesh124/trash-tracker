@@ -2,6 +2,7 @@ export type Roommate = {
   id: string;
   name: string;
   order_index: number;
+  email: string | null;
 };
 
 export type TrashLog = {
