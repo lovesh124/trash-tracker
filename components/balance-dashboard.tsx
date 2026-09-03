@@ -1,4 +1,3 @@
-import { ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PayNowDialog } from "@/components/pay-now-dialog";
 import { formatCents } from "@/lib/money";
@@ -32,7 +31,7 @@ export function BalanceDashboard({
                 <CardContent className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 flex-1 items-center gap-1.5 text-sm">
                     <span className="font-medium">{balance.fromRoommate.name}</span>
-                    <ArrowRight className="size-3.5 shrink-0 text-muted-foreground" />
+                    <span className="shrink-0 text-muted-foreground">owes</span>
                     <span className="font-medium">{balance.toRoommate.name}</span>
                     <span className="ml-1 shrink-0 text-muted-foreground">
                       {formatCents(balance.amountCents)}
