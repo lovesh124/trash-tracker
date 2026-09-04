@@ -58,7 +58,7 @@ export default function HistoryPage() {
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
             <Clock3 className="size-3.5" /> Household record
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight">History</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">History</h1>
         </div>
       </header>
 

@@ -31,10 +31,10 @@ export function BalanceDashboard({
             return (
               <Card
                 key={key}
-                className="ring-1 ring-foreground/10 transition-colors hover:bg-muted/30"
+                className="bg-[linear-gradient(180deg,var(--card),color-mix(in_oklch,var(--card),var(--muted)_50%))] ring-1 ring-foreground/10 transition-all hover:brightness-97"
               >
                 <CardContent className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+                  <div className="flex min-w-0 flex-1 items-center gap-3 text-sm">
                     <InitialsAvatar name={balance.fromRoommate.name} />
                     <span className="min-w-0 truncate">
                       <span className="font-medium">{balance.fromRoommate.name}</span>
@@ -43,7 +43,9 @@ export function BalanceDashboard({
                     </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <Badge variant="accent">{formatCents(balance.amountCents)}</Badge>
+                    <Badge variant="accent" className="tabular-nums">
+                      {formatCents(balance.amountCents)}
+                    </Badge>
                     <PayNowDialog balance={balance} onSettled={onSettled} />
                   </div>
                 </CardContent>

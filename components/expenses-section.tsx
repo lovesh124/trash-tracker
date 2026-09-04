@@ -36,7 +36,9 @@ export function ExpensesSection({ roommates }: { roommates: Roommate[] }) {
 
   return (
     <section className="flex flex-col gap-6 border-t border-border pt-8">
-      <h2 className="text-2xl font-semibold tracking-tight">💸 Household Expenses</h2>
+      <h2 className="font-heading text-2xl font-semibold tracking-tight">
+        💸 Household Expenses
+      </h2>
 
       {loading && (
         <div className="flex flex-col gap-6" role="status" aria-label="Loading expenses">

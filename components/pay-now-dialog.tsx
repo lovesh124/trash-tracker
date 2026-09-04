@@ -126,7 +126,8 @@ export function PayNowDialog({
         <DialogHeader>
           <DialogTitle>Confirm payment</DialogTitle>
           <DialogDescription>
-            Mark {balance.fromRoommate.name}&apos;s {formatCents(balance.amountCents)} to{" "}
+            Mark {balance.fromRoommate.name}&apos;s{" "}
+            <span className="tabular-nums">{formatCents(balance.amountCents)}</span> to{" "}
             {balance.toRoommate.name} as paid. Adding a screenshot is optional.
           </DialogDescription>
         </DialogHeader>

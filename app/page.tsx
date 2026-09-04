@@ -41,10 +41,12 @@ export default function Home() {
   }, [load]);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 sm:py-10">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-9 px-4 py-8 sm:px-6 sm:py-12">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">🗑️ Trash Tracker</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            🗑️ Trash Tracker
+          </h1>
         </div>
         <Button variant="ghost" size="sm" className="h-10 px-3" render={<Link href="/history" />}>
           <History className="size-4" />

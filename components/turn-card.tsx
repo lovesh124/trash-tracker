@@ -16,7 +16,7 @@ function formatRelativeTime(iso: string) {
 
 export function TurnCard({ turn }: { turn: CurrentTurn }) {
   return (
-    <Card className="relative items-center overflow-visible border-0 bg-primary py-6 text-center text-primary-foreground shadow-[0_18px_45px_-24px_oklch(0.25_0.08_145)] sm:py-8">
+    <Card className="relative items-center overflow-visible border-0 bg-[linear-gradient(135deg,var(--primary),color-mix(in_oklch,var(--primary),black_18%))] py-6 text-center text-primary-foreground shadow-[0_18px_45px_-24px_oklch(0.25_0.08_145)] sm:py-8">
       <div className="absolute inset-x-6 top-0 h-1 rounded-b-full bg-accent" />
       <CardContent className="flex w-full flex-col items-center gap-3">
         <div className="flex size-14 items-center justify-center rounded-2xl bg-primary-foreground/12 ring-1 ring-primary-foreground/20">
@@ -25,7 +25,7 @@ export function TurnCard({ turn }: { turn: CurrentTurn }) {
         <Badge variant="accent" className="tracking-[0.2em] uppercase">
           Up next
         </Badge>
-        <p className="max-w-full text-3xl font-semibold tracking-tight sm:text-4xl">
+        <p className="font-heading max-w-full text-3xl font-bold tracking-tight sm:text-4xl">
           {turn.roommate.name}&apos;s turn
         </p>
         {turn.lastLog && (

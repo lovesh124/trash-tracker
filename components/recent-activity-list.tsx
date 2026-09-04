@@ -61,7 +61,7 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
           {activity.map((item) => (
             <li
               key={`${item.type}-${item.id}`}
-              className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-[0_8px_24px_-20px_oklch(0.3_0.06_145)] ring-1 ring-foreground/10 transition-colors hover:bg-card/80"
+              className="flex items-center gap-3 rounded-xl bg-[linear-gradient(180deg,var(--card),color-mix(in_oklch,var(--card),var(--muted)_50%))] p-4 shadow-[0_8px_24px_-20px_oklch(0.3_0.06_145)] ring-1 ring-foreground/10 transition-all hover:brightness-97"
             >
               {item.type === "settlement" && item.proofUrl ? (
                 <SettlementProofThumbnail
@@ -84,7 +84,9 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
                       <span className="font-medium">{item.payer.name}</span> paid for{" "}
                       {item.description}
                     </span>
-                    <Badge variant="accent">{formatCents(item.totalCents)}</Badge>
+                    <Badge variant="accent" className="tabular-nums">
+                      {formatCents(item.totalCents)}
+                    </Badge>
                     {item.owerNames.length > 0 && (
                       <span className="text-muted-foreground">
                         split with {item.owerNames.join(", ")}
@@ -96,7 +98,9 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
                     <span className="font-medium">{item.from.name}</span>
                     <span>paid</span>
                     <span className="font-medium">{item.to.name}</span>
-                    <Badge variant="accent">{formatCents(item.amountCents)}</Badge>
+                    <Badge variant="accent" className="tabular-nums">
+                      {formatCents(item.amountCents)}
+                    </Badge>
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground">{formatDateTime(item.createdAt)}</p>
