@@ -17,7 +17,7 @@ export function LogHistoryItem({ log }: { log: TrashLogWithRoommate }) {
 
   return (
     <>
-      <li className="flex items-center gap-4 rounded-xl bg-card p-3.5 shadow-[0_8px_24px_-20px_oklch(0.3_0.06_145)] ring-1 ring-foreground/10 transition-colors hover:bg-card/80">
+      <li className="flex items-center gap-4 rounded-xl bg-card p-3.5 shadow-[0_8px_24px_-20px_oklch(0.35_0.1_38)] ring-1 ring-foreground/10 transition-colors hover:bg-card/80">
         {log.photo_url ? (
           <button
             type="button"

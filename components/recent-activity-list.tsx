@@ -61,7 +61,7 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
           {activity.map((item) => (
             <li
               key={`${item.type}-${item.id}`}
-              className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-[0_8px_24px_-20px_oklch(0.3_0.06_145)] ring-1 ring-foreground/10 transition-colors hover:bg-card/80"
+              className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-[0_8px_24px_-20px_oklch(0.35_0.1_38)] ring-1 ring-foreground/10 transition-colors hover:bg-card/80"
             >
               {item.type === "settlement" && item.proofUrl ? (
                 <SettlementProofThumbnail

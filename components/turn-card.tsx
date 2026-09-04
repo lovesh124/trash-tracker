@@ -16,7 +16,7 @@ function formatRelativeTime(iso: string) {
 
 export function TurnCard({ turn }: { turn: CurrentTurn }) {
   return (
-    <Card className="relative items-center overflow-visible border-0 bg-primary py-6 text-center text-primary-foreground shadow-[0_18px_45px_-24px_oklch(0.25_0.08_145)] sm:py-8">
+    <Card className="relative items-center overflow-visible border-0 bg-primary py-6 text-center text-primary-foreground shadow-[0_18px_45px_-24px_oklch(0.3_0.12_38)] sm:py-8">
       <div className="absolute inset-x-6 top-0 h-1 rounded-b-full bg-accent" />
       <CardContent className="flex w-full flex-col items-center gap-3">
         <div className="flex size-14 items-center justify-center rounded-2xl bg-primary-foreground/12 ring-1 ring-primary-foreground/20">
