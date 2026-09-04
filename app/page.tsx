@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { History } from "lucide-react";
+import { History, Trash2 } from "lucide-react";
 import { TurnCard } from "@/components/turn-card";
 import { LogTrashForm } from "@/components/log-trash-form";
 import { ExpensesSection } from "@/components/expenses-section";
@@ -44,8 +44,9 @@ export default function Home() {
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-9 px-4 py-8 sm:px-6 sm:py-12">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            🗑️ Trash Tracker
+          <h1 className="font-heading flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            <Trash2 className="size-6 text-primary" />
+            Trash Tracker
           </h1>
         </div>
         <Button variant="ghost" size="sm" className="h-10 px-3" render={<Link href="/history" />}>

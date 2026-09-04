@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Wallet } from "lucide-react";
 import { ExpenseForm } from "@/components/expense-form";
 import { BalanceDashboard } from "@/components/balance-dashboard";
 import { RecentActivityList } from "@/components/recent-activity-list";
@@ -36,8 +37,9 @@ export function ExpensesSection({ roommates }: { roommates: Roommate[] }) {
 
   return (
     <section className="flex flex-col gap-6 border-t border-border pt-8">
-      <h2 className="font-heading text-2xl font-semibold tracking-tight">
-        💸 Household Expenses
+      <h2 className="font-heading flex items-center gap-2 text-2xl font-semibold tracking-tight">
+        <Wallet className="size-6 text-primary" />
+        Household Expenses
       </h2>
 
       {loading && (
