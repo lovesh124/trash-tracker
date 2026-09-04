@@ -7,6 +7,7 @@ import { TurnCard } from "@/components/turn-card";
 import { LogTrashForm } from "@/components/log-trash-form";
 import { ExpensesSection } from "@/components/expenses-section";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { CurrentTurn, Roommate } from "@/lib/supabase/types";
 
 export default function Home() {
@@ -52,9 +53,13 @@ export default function Home() {
       </header>
 
       {loading && (
-        <div className="flex flex-col gap-4 py-10" role="status" aria-label="Loading tracker">
-          <div className="h-64 animate-pulse rounded-xl bg-muted" />
-          <div className="mx-auto h-4 w-32 animate-pulse rounded-full bg-muted" />
+        <div className="flex flex-col gap-8" role="status" aria-label="Loading tracker">
+          <div className="flex flex-col items-center gap-3 rounded-xl bg-card py-8 ring-1 ring-foreground/10 sm:py-10">
+            <Skeleton className="size-14 rounded-2xl" />
+            <Skeleton className="h-3 w-16 rounded-full" />
+            <Skeleton className="h-9 w-48 rounded-lg" />
+          </div>
+          <Skeleton className="h-11 w-full rounded-lg" />
         </div>
       )}
 

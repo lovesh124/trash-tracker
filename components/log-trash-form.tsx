@@ -125,7 +125,11 @@ export function LogTrashForm({
         if (!next) resetForm();
       }}
     >
-      <Button size="lg" className="w-full shadow-[0_12px_28px_-18px_oklch(0.25_0.08_145)]" onClick={() => setOpen(true)}>
+      <Button
+        size="lg"
+        className="w-full shadow-[0_12px_28px_-18px_oklch(0.25_0.08_145)] transition-transform hover:-translate-y-0.5"
+        onClick={() => setOpen(true)}
+      >
         <Camera className="size-4" />
         Log a completed turn
       </Button>

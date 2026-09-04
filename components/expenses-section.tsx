@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ExpenseForm } from "@/components/expense-form";
 import { BalanceDashboard } from "@/components/balance-dashboard";
 import { RecentActivityList } from "@/components/recent-activity-list";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Balance } from "@/lib/balances";
 import type { ActivityItem, Roommate } from "@/lib/supabase/types";
 
@@ -38,9 +39,18 @@ export function ExpensesSection({ roommates }: { roommates: Roommate[] }) {
       <h2 className="text-2xl font-semibold tracking-tight">💸 Household Expenses</h2>
 
       {loading && (
-        <div className="flex flex-col gap-4 py-6" role="status" aria-label="Loading expenses">
-          <div className="h-11 animate-pulse rounded-xl bg-muted" />
-          <div className="h-24 animate-pulse rounded-xl bg-muted" />
+        <div className="flex flex-col gap-6" role="status" aria-label="Loading expenses">
+          <Skeleton className="h-11 w-full rounded-lg" />
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-3 w-20 rounded-full" />
+            <Skeleton className="h-14 w-full rounded-xl" />
+            <Skeleton className="h-14 w-full rounded-xl" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-3 w-28 rounded-full" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+          </div>
         </div>
       )}
 

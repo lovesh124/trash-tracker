@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { HandCoins, Receipt } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { formatCents } from "@/lib/money";
 import type { ActivityItem } from "@/lib/supabase/types";
@@ -60,7 +61,7 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
           {activity.map((item) => (
             <li
               key={`${item.type}-${item.id}`}
-              className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-[0_8px_24px_-20px_oklch(0.3_0.06_145)] ring-1 ring-foreground/10"
+              className="flex items-center gap-3 rounded-xl bg-card p-3.5 shadow-[0_8px_24px_-20px_oklch(0.3_0.06_145)] ring-1 ring-foreground/10 transition-colors hover:bg-card/80"
             >
               {item.type === "settlement" && item.proofUrl ? (
                 <SettlementProofThumbnail
@@ -78,22 +79,24 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
               )}
               <div className="min-w-0 flex-1">
                 {item.type === "expense" ? (
-                  <p className="truncate text-sm">
-                    <span className="font-medium">{item.payer.name}</span> paid for{" "}
-                    {item.description} —{" "}
-                    <span className="font-medium">{formatCents(item.totalCents)}</span>
+                  <p className="flex flex-wrap items-center gap-x-1 text-sm">
+                    <span className="truncate">
+                      <span className="font-medium">{item.payer.name}</span> paid for{" "}
+                      {item.description}
+                    </span>
+                    <Badge variant="accent">{formatCents(item.totalCents)}</Badge>
                     {item.owerNames.length > 0 && (
                       <span className="text-muted-foreground">
-                        {" "}
                         split with {item.owerNames.join(", ")}
                       </span>
                     )}
                   </p>
                 ) : (
-                  <p className="truncate text-sm">
-                    <span className="font-medium">{item.from.name}</span> paid{" "}
-                    <span className="font-medium">{item.to.name}</span>{" "}
-                    {formatCents(item.amountCents)}
+                  <p className="flex flex-wrap items-center gap-x-1 text-sm">
+                    <span className="font-medium">{item.from.name}</span>
+                    <span>paid</span>
+                    <span className="font-medium">{item.to.name}</span>
+                    <Badge variant="accent">{formatCents(item.amountCents)}</Badge>
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground">{formatDateTime(item.createdAt)}</p>

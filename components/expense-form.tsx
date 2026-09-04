@@ -96,7 +96,11 @@ export function ExpenseForm({
         if (!next) resetForm();
       }}
     >
-      <Button size="lg" className="w-full" onClick={() => setOpen(true)}>
+      <Button
+        size="lg"
+        className="w-full shadow-[0_12px_28px_-18px_oklch(0.25_0.08_145)] transition-transform hover:-translate-y-0.5"
+        onClick={() => setOpen(true)}
+      >
         <Receipt className="size-4" />
         Add an expense
       </Button>
