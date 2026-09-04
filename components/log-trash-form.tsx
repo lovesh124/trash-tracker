@@ -127,7 +127,7 @@ export function LogTrashForm({
     >
       <Button
         size="lg"
-        className="w-full shadow-[0_12px_28px_-18px_oklch(0.3_0.12_38)] transition-transform hover:-translate-y-0.5"
+        className="w-full shadow-[0_12px_28px_-18px_oklch(0.3_0.12_200)] transition-transform hover:-translate-y-0.5"
         onClick={() => setOpen(true)}
       >
         <Camera className="size-4" />
