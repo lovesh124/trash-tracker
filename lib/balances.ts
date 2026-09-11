@@ -74,3 +74,35 @@ export function findPairBalance(
     (b) => b.fromRoommate.id === fromRoommateId && b.toRoommate.id === toRoommateId
   );
 }
+
+/** One expense split or settlement between exactly two roommates, in chronological order. */
+export type PairHistoryEntry = {
+  id: string;
+  type: "expense" | "settlement";
+  createdAt: string;
+  description: string;
+  amountCents: number;
+  owerId: string;
+  creditorId: string;
+};
+
+export type PairHistoryEntryWithRunning = PairHistoryEntry & {
+  /** Signed running total of what `fromRoommateId` owes the other person, after this entry. */
+  runningBalanceCents: number;
+};
+
+/**
+ * Annotates a pair's chronological transaction history with a running balance,
+ * so each entry shows what the net debt was immediately after it happened —
+ * letting a settled-up bill's individual contributions be traced back.
+ */
+export function withRunningBalance(
+  entries: PairHistoryEntry[],
+  fromRoommateId: string
+): PairHistoryEntryWithRunning[] {
+  let running = 0;
+  return entries.map((entry) => {
+    running += entry.owerId === fromRoommateId ? entry.amountCents : -entry.amountCents;
+    return { ...entry, runningBalanceCents: running };
+  });
+}
