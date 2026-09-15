@@ -23,12 +23,24 @@ import {
 } from "@/components/ui/select";
 import type { Roommate } from "@/lib/supabase/types";
 
-export function LogTrashForm({
+export function LogChoreForm({
   roommates,
   onLogged,
+  apiPath,
+  triggerLabel,
+  dialogTitle,
+  dialogDescription,
+  roommateQuestion,
+  successMessage,
 }: {
   roommates: Roommate[];
   onLogged: () => void;
+  apiPath: string;
+  triggerLabel: string;
+  dialogTitle: string;
+  dialogDescription: string;
+  roommateQuestion: string;
+  successMessage: string;
 }) {
   const [open, setOpen] = useState(false);
   const [roommateId, setRoommateId] = useState<string>("");
@@ -100,13 +112,13 @@ export function LogTrashForm({
       formData.set("roommate_id", roommateId);
       if (photo) formData.set("photo", photo);
 
-      const res = await fetch("/api/logs", { method: "POST", body: formData });
+      const res = await fetch(apiPath, { method: "POST", body: formData });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Failed to submit log");
       }
 
-      toast.success("Trash log recorded!");
+      toast.success(successMessage);
       resetForm();
       setOpen(false);
       onLogged();
@@ -131,19 +143,17 @@ export function LogTrashForm({
         onClick={() => setOpen(true)}
       >
         <Camera className="size-4" />
-        Log a completed turn
+        {triggerLabel}
       </Button>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Log trash taken out</DialogTitle>
-          <DialogDescription>
-            Pick who took it out. Adding a photo is optional.
-          </DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="roommate">Who took it out?</Label>
+            <Label htmlFor="roommate">{roommateQuestion}</Label>
             <Select
               items={roommates.map((r) => ({ value: r.id, label: r.name }))}
               value={roommateId}

@@ -2,30 +2,47 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { History, Trash2 } from "lucide-react";
+import { Broom, History, Trash2 } from "lucide-react";
 import { TurnCard } from "@/components/turn-card";
-import { LogTrashForm } from "@/components/log-trash-form";
+import { LogChoreForm } from "@/components/log-chore-form";
 import { ExpensesSection } from "@/components/expenses-section";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CurrentTurn, Roommate } from "@/lib/supabase/types";
 
+function ChoreSkeleton() {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col items-center gap-3 rounded-xl bg-card py-8 ring-1 ring-foreground/10 sm:py-10">
+        <Skeleton className="size-14 rounded-2xl" />
+        <Skeleton className="h-3 w-16 rounded-full" />
+        <Skeleton className="h-9 w-48 rounded-lg" />
+      </div>
+      <Skeleton className="h-11 w-full rounded-lg" />
+    </div>
+  );
+}
+
 export default function Home() {
-  const [turn, setTurn] = useState<CurrentTurn | null>(null);
+  const [trashTurn, setTrashTurn] = useState<CurrentTurn | null>(null);
+  const [sweepTurn, setSweepTurn] = useState<CurrentTurn | null>(null);
   const [roommates, setRoommates] = useState<Roommate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [turnRes, roommatesRes] = await Promise.all([
+      const [trashTurnRes, sweepTurnRes, roommatesRes] = await Promise.all([
         fetch("/api/turn"),
+        fetch("/api/sweep/turn"),
         fetch("/api/roommates"),
       ]);
-      if (!turnRes.ok || !roommatesRes.ok) throw new Error();
-      const turnData = await turnRes.json();
+      if (!trashTurnRes.ok || !sweepTurnRes.ok || !roommatesRes.ok) throw new Error();
+      const trashTurnData = await trashTurnRes.json();
+      const sweepTurnData = await sweepTurnRes.json();
       const roommatesData = await roommatesRes.json();
-      setTurn(turnData);
+      setTrashTurn(trashTurnData);
+      setSweepTurn(sweepTurnData);
       setRoommates(roommatesData.roommates);
       setError(false);
     } catch {
@@ -56,13 +73,9 @@ export default function Home() {
       </header>
 
       {loading && (
-        <div className="flex flex-col gap-8" role="status" aria-label="Loading tracker">
-          <div className="flex flex-col items-center gap-3 rounded-xl bg-card py-8 ring-1 ring-foreground/10 sm:py-10">
-            <Skeleton className="size-14 rounded-2xl" />
-            <Skeleton className="h-3 w-16 rounded-full" />
-            <Skeleton className="h-9 w-48 rounded-lg" />
-          </div>
-          <Skeleton className="h-11 w-full rounded-lg" />
+        <div className="flex flex-col gap-9" role="status" aria-label="Loading tracker">
+          <ChoreSkeleton />
+          <ChoreSkeleton />
         </div>
       )}
 
@@ -72,10 +85,42 @@ export default function Home() {
         </p>
       )}
 
-      {!loading && !error && turn && (
+      {!loading && !error && trashTurn && sweepTurn && (
         <>
-          <TurnCard turn={turn} />
-          <LogTrashForm roommates={roommates} onLogged={load} />
+          <section className="flex flex-col gap-3">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Trash
+            </h3>
+            <TurnCard turn={trashTurn} icon={Trash2} />
+            <LogChoreForm
+              roommates={roommates}
+              onLogged={load}
+              apiPath="/api/logs"
+              triggerLabel="Log a completed turn"
+              dialogTitle="Log trash taken out"
+              dialogDescription="Pick who took it out. Adding a photo is optional."
+              roommateQuestion="Who took it out?"
+              successMessage="Trash log recorded!"
+            />
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Sweeping (kitchen + living room)
+            </h3>
+            <TurnCard turn={sweepTurn} icon={Broom} />
+            <LogChoreForm
+              roommates={roommates}
+              onLogged={load}
+              apiPath="/api/sweep/logs"
+              triggerLabel="Log a completed sweep"
+              dialogTitle="Log kitchen + living room swept"
+              dialogDescription="Pick who swept it. Adding a photo is optional."
+              roommateQuestion="Who swept it?"
+              successMessage="Sweep log recorded!"
+            />
+          </section>
+
           <ExpensesSection roommates={roommates} />
         </>
       )}

@@ -15,11 +15,16 @@ function getTransporter() {
   return transporter;
 }
 
-export async function sendTurnReminderEmail(to: string, roommateName: string): Promise<void> {
+/** `choreAction` reads naturally as "it's your turn to {choreAction}", e.g. "take out the trash". */
+export async function sendTurnReminderEmail(
+  to: string,
+  roommateName: string,
+  choreAction: string
+): Promise<void> {
   await getTransporter().sendMail({
     from: process.env.GMAIL_USER,
     to,
-    subject: "🗑️ It's your turn to take out the trash",
-    text: `Hey ${roommateName}, it's your turn to take out the trash! Check Trash Tracker when you get a chance.`,
+    subject: `It's your turn to ${choreAction}`,
+    text: `Hey ${roommateName}, it's your turn to ${choreAction}! Check Trash Tracker when you get a chance.`,
   });
 }

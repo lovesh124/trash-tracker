@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { HandCoins, Receipt } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { formatCents } from "@/lib/money";
 import type { ActivityItem } from "@/lib/supabase/types";
+
+const PAGE_SIZE = 10;
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
@@ -44,6 +47,11 @@ function SettlementProofThumbnail({ proofUrl, label }: { proofUrl: string; label
 }
 
 export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(activity.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = activity.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -58,7 +66,7 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
 
       {activity.length > 0 && (
         <ul className="flex flex-col gap-2">
-          {activity.map((item) => (
+          {pageItems.map((item) => (
             <li
               key={`${item.type}-${item.id}`}
               className="flex items-center gap-3 rounded-xl bg-[linear-gradient(180deg,var(--card),color-mix(in_oklch,var(--card),var(--muted)_50%))] p-4 shadow-[0_8px_24px_-20px_oklch(0.3_0.06_145)] ring-1 ring-foreground/10 transition-all hover:brightness-97"
@@ -108,6 +116,23 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+            <Button
+              key={n}
+              type="button"
+              size="icon-sm"
+              variant={n === currentPage ? "default" : "outline"}
+              aria-current={n === currentPage ? "page" : undefined}
+              onClick={() => setPage(n)}
+            >
+              {n}
+            </Button>
+          ))}
+        </div>
       )}
     </div>
   );

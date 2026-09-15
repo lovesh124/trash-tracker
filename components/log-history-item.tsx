@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import type { TrashLogWithRoommate } from "@/lib/supabase/types";
+import type { ChoreLogWithRoommate } from "@/lib/supabase/types";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
@@ -12,7 +12,7 @@ function formatDateTime(iso: string) {
   });
 }
 
-export function LogHistoryItem({ log }: { log: TrashLogWithRoommate }) {
+export function LogHistoryItem({ log }: { log: ChoreLogWithRoommate }) {
   const [open, setOpen] = useState(false);
 
   return (

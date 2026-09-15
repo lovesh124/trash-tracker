@@ -9,4 +9,5 @@ export const supabaseServer = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 export const PHOTO_BUCKET = "trash-proof-photos";
+export const SWEEP_PHOTO_BUCKET = "sweep-proof-photos";
 export const PAYMENT_PROOF_BUCKET = "payment-proof-photos";

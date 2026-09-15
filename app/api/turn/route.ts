@@ -1,39 +1,10 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
-import { getNextRoommate } from "@/lib/turn";
-import type { Roommate, TrashLogWithRoommate } from "@/lib/supabase/types";
+import { getCurrentTurn } from "@/lib/chores-server";
 
 export async function GET() {
-  const { data: roommates, error: roommatesError } = await supabaseServer
-    .from("roommates")
-    .select("id, name, order_index")
-    .order("order_index", { ascending: true });
-
-  if (roommatesError || !roommates || roommates.length === 0) {
-    return NextResponse.json(
-      { error: roommatesError?.message ?? "No roommates configured" },
-      { status: 500 }
-    );
+  const result = await getCurrentTurn("trash_logs");
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
-
-  const { data: lastLog, error: lastLogError } = await supabaseServer
-    .from("trash_logs")
-    .select("*, roommate:roommates(id, name)")
-    .order("taken_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (lastLogError) {
-    return NextResponse.json({ error: lastLogError.message }, { status: 500 });
-  }
-
-  const typedRoommates = roommates as Roommate[];
-  const typedLastLog = lastLog as TrashLogWithRoommate | null;
-
-  const nextRoommate = getNextRoommate(typedRoommates, typedLastLog?.roommate_id ?? null);
-
-  return NextResponse.json({
-    roommate: nextRoommate,
-    lastLog: typedLastLog,
-  });
+  return NextResponse.json(result.turn);
 }

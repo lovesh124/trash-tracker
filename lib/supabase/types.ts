@@ -5,7 +5,8 @@ export type Roommate = {
   email: string | null;
 };
 
-export type TrashLog = {
+/** Shape shared by every chore's log table (trash_logs, sweep_logs, ...). */
+export type ChoreLog = {
   id: string;
   roommate_id: string;
   taken_at: string;
@@ -13,13 +14,13 @@ export type TrashLog = {
   created_at: string;
 };
 
-export type TrashLogWithRoommate = TrashLog & {
+export type ChoreLogWithRoommate = ChoreLog & {
   roommate: Pick<Roommate, "id" | "name">;
 };
 
 export type CurrentTurn = {
   roommate: Roommate;
-  lastLog: TrashLogWithRoommate | null;
+  lastLog: ChoreLogWithRoommate | null;
 };
 
 export type Expense = {

@@ -5,24 +5,38 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Clock3, Loader2 } from "lucide-react";
 import { LogHistoryItem } from "@/components/log-history-item";
 import { Button } from "@/components/ui/button";
-import type { TrashLogWithRoommate } from "@/lib/supabase/types";
+import type { ChoreLogWithRoommate } from "@/lib/supabase/types";
+
+type Chore = "trash" | "sweep";
+
+const CHORE_CONFIG: Record<Chore, { label: string; apiPath: string; emptyMessage: string }> = {
+  trash: {
+    label: "Trash",
+    apiPath: "/api/logs",
+    emptyMessage: "No logs yet. Be the first to take out the trash!",
+  },
+  sweep: {
+    label: "Sweeping",
+    apiPath: "/api/sweep/logs",
+    emptyMessage: "No logs yet. Be the first to sweep the kitchen + living room!",
+  },
+};
 
 export default function HistoryPage() {
-  const [logs, setLogs] = useState<TrashLogWithRoommate[]>([]);
+  const [chore, setChore] = useState<Chore>("trash");
+  const [logs, setLogs] = useState<ChoreLogWithRoommate[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
 
-  const load = useCallback(async (pageToLoad: number) => {
+  const load = useCallback(async (pageToLoad: number, forChore: Chore) => {
     try {
-      const res = await fetch(`/api/logs?page=${pageToLoad}`);
+      const res = await fetch(`${CHORE_CONFIG[forChore].apiPath}?page=${pageToLoad}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setLogs((prev) =>
-        pageToLoad === 0 ? data.logs : [...prev, ...data.logs]
-      );
+      setLogs((prev) => (pageToLoad === 0 ? data.logs : [...prev, ...data.logs]));
       setHasMore(data.hasMore);
       setError(false);
     } catch {
@@ -31,14 +45,17 @@ export default function HistoryPage() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount
-    load(0).finally(() => setLoading(false));
-  }, [load]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the view when the selected chore changes
+    setLoading(true);
+    setPage(0);
+    setLogs([]);
+    load(0, chore).finally(() => setLoading(false));
+  }, [load, chore]);
 
   async function loadMore() {
     setLoadingMore(true);
     const nextPage = page + 1;
-    await load(nextPage);
+    await load(nextPage, chore);
     setPage(nextPage);
     setLoadingMore(false);
   }
@@ -62,6 +79,19 @@ export default function HistoryPage() {
         </div>
       </header>
 
+      <div className="flex gap-2">
+        {(Object.keys(CHORE_CONFIG) as Chore[]).map((key) => (
+          <Button
+            key={key}
+            variant={chore === key ? "default" : "outline"}
+            size="sm"
+            onClick={() => setChore(key)}
+          >
+            {CHORE_CONFIG[key].label}
+          </Button>
+        ))}
+      </div>
+
       {loading && (
         <div className="flex flex-col gap-3 py-10" role="status" aria-label="Loading history">
           <div className="h-16 animate-pulse rounded-xl bg-muted" />
@@ -78,7 +108,7 @@ export default function HistoryPage() {
 
       {!loading && !error && logs.length === 0 && (
         <p className="rounded-xl border border-dashed border-primary/25 bg-card/60 px-6 py-16 text-center text-sm text-muted-foreground">
-          No logs yet. Be the first to take out the trash!
+          {CHORE_CONFIG[chore].emptyMessage}
         </p>
       )}
 
