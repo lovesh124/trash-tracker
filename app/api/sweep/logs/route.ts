@@ -3,7 +3,7 @@ import { SWEEP_PHOTO_BUCKET, supabaseServer } from "@/lib/supabase/server";
 import { PhotoValidationError, uploadProofPhoto } from "@/lib/supabase/photo-upload";
 import { sendTurnReminderEmail } from "@/lib/email";
 import { getNextRoommate } from "@/lib/turn";
-import { getOrderedRoommates } from "@/lib/chores-server";
+import { getOrderedRoommates, recordReminderSent } from "@/lib/chores-server";
 import type { Roommate } from "@/lib/supabase/types";
 
 const PAGE_SIZE = 20;
@@ -88,6 +88,9 @@ export async function POST(request: Request) {
       after(async () => {
         try {
           await sendTurnReminderEmail(email, nextRoommate.name, "sweep the kitchen + living room");
+          // Reset the periodic-reminder cooldown so the cron job doesn't nag
+          // this same "you're up next" notification again a couple days later.
+          await recordReminderSent("sweep");
         } catch (err) {
           console.error("Failed to send turn reminder email:", err);
         }
