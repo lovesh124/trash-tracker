@@ -6,11 +6,15 @@ import type { ActivityItem, Roommate } from "@/lib/supabase/types";
 const ACTIVITY_LIMIT = 20;
 
 export async function GET() {
-  const [roommatesRes, splitsRes, settlementsRes, expensesRes] = await Promise.all([
+  const [roommatesRes, splitsRes, allSettlementsRes, settlementsRes, expensesRes] = await Promise.all([
     supabaseServer.from("roommates").select("id, name"),
     supabaseServer
       .from("expense_splits")
       .select("roommate_id, amount_cents, expense:expenses(payer_id)"),
+    // Every settlement ever, for the balance math. The limited query below is
+    // only for the Recent Activity feed — using it here would silently drop
+    // older payments and inflate balances.
+    supabaseServer.from("settlements").select("from_roommate_id, to_roommate_id, amount_cents"),
     supabaseServer
       .from("settlements")
       .select("id, from_roommate_id, to_roommate_id, amount_cents, proof_url, created_at, from:roommates!settlements_from_roommate_id_fkey(id, name), to:roommates!settlements_to_roommate_id_fkey(id, name)")
@@ -28,6 +32,9 @@ export async function GET() {
   }
   if (splitsRes.error) {
     return NextResponse.json({ error: splitsRes.error.message }, { status: 500 });
+  }
+  if (allSettlementsRes.error) {
+    return NextResponse.json({ error: allSettlementsRes.error.message }, { status: 500 });
   }
   if (settlementsRes.error) {
     return NextResponse.json({ error: settlementsRes.error.message }, { status: 500 });
@@ -52,7 +59,7 @@ export async function GET() {
     return [{ owerId: split.roommate_id, creditorId: expense.payer_id, amountCents: split.amount_cents }];
   });
 
-  for (const settlement of settlementsRes.data) {
+  for (const settlement of allSettlementsRes.data) {
     debts.push({
       owerId: settlement.to_roommate_id,
       creditorId: settlement.from_roommate_id,

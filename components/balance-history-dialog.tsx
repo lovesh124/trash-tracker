@@ -11,7 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import { formatCents } from "@/lib/money";
-import type { Balance, PairHistoryEntryWithRunning } from "@/lib/balances";
+import {
+  splitAtLastSettleUp,
+  type Balance,
+  type PairHistoryEntryWithRunning,
+} from "@/lib/balances";
+import { cn } from "@/lib/utils";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -26,15 +31,32 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
   const [entries, setEntries] = useState<PairHistoryEntryWithRunning[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [showSettled, setShowSettled] = useState(false);
+
+  const from = balance.fromRoommate;
+  const to = balance.toRoommate;
+  // Every entry is between exactly these two people, so ids map to one of them.
+  const nameOf = (id: string) => (id === from.id ? from.name : to.name);
+
+  function describe(entry: PairHistoryEntryWithRunning) {
+    // For a settlement, creditorId is the payer and owerId the receiver (see the history route).
+    return entry.type === "expense"
+      ? `${nameOf(entry.creditorId)} paid for ${entry.description}`
+      : `${nameOf(entry.creditorId)} paid ${nameOf(entry.owerId)}`;
+  }
+
+  function describeRunning(cents: number) {
+    if (cents === 0) return "Settled up";
+    return cents > 0
+      ? `${from.name} owes ${to.name} ${formatCents(cents)}`
+      : `${to.name} owes ${from.name} ${formatCents(-cents)}`;
+  }
 
   async function load() {
     setLoading(true);
     setError(false);
     try {
-      const params = new URLSearchParams({
-        from: balance.fromRoommate.id,
-        to: balance.toRoommate.id,
-      });
+      const params = new URLSearchParams({ from: from.id, to: to.id });
       const res = await fetch(`/api/balances/history?${params}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -46,6 +68,38 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
     }
   }
 
+  const { settled, current } = splitAtLastSettleUp(entries ?? []);
+
+  function renderRow(entry: PairHistoryEntryWithRunning, isSettled: boolean) {
+    const addsToBalance = entry.owerId === from.id;
+    return (
+      <li
+        key={entry.id}
+        className={cn(
+          "flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2 text-sm",
+          isSettled && "opacity-60"
+        )}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="truncate">{describe(entry)}</p>
+          <p className="text-xs text-muted-foreground">
+            {entry.type === "expense" && `${nameOf(entry.owerId)}'s share · `}
+            {formatDate(entry.createdAt)}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className={cn("font-medium tabular-nums", !addsToBalance && "text-primary")}>
+            {addsToBalance ? "+" : "−"}
+            {formatCents(entry.amountCents)}
+          </p>
+          <p className="text-xs tabular-nums text-muted-foreground">
+            {describeRunning(entry.runningBalanceCents)}
+          </p>
+        </div>
+      </li>
+    );
+  }
+
   return (
     <Dialog
       open={open}
@@ -55,6 +109,7 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
           void load();
         } else {
           setEntries(null);
+          setShowSettled(false);
         }
       }}
     >
@@ -63,21 +118,22 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
         onClick={() => setOpen(true)}
         className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left text-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <InitialsAvatar name={balance.fromRoommate.name} />
+        <InitialsAvatar name={from.name} />
         <span className="min-w-0 truncate">
-          <span className="font-medium">{balance.fromRoommate.name}</span>
+          <span className="font-medium">{from.name}</span>
           <span className="text-muted-foreground"> owes </span>
-          <span className="font-medium">{balance.toRoommate.name}</span>
+          <span className="font-medium">{to.name}</span>
         </span>
       </button>
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {balance.fromRoommate.name} &rarr; {balance.toRoommate.name}
+            {from.name} &rarr; {to.name}
           </DialogTitle>
           <DialogDescription>
-            How the current balance of {formatCents(balance.amountCents)} built up.
+            How the current balance of {formatCents(balance.amountCents)} built up
+            {settled.length > 0 ? " since you last settled up." : "."}
           </DialogDescription>
         </DialogHeader>
 
@@ -96,31 +152,22 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
         )}
 
         {!loading && !error && entries && entries.length > 0 && (
-          <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto">
-            {entries.map((entry) => {
-              const addsToBalance = entry.owerId === balance.fromRoommate.id;
-              return (
-                <li
-                  key={entry.id}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2 text-sm"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate">{entry.description}</p>
-                    <p className="text-xs text-muted-foreground">{formatDate(entry.createdAt)}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className={`tabular-nums font-medium ${addsToBalance ? "" : "text-primary"}`}>
-                      {addsToBalance ? "+" : "−"}
-                      {formatCents(entry.amountCents)}
-                    </p>
-                    <p className="tabular-nums text-xs text-muted-foreground">
-                      bal {formatCents(Math.abs(entry.runningBalanceCents))}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="flex flex-col gap-2">
+            {settled.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowSettled((v) => !v)}
+                className="self-start text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                {showSettled ? "Hide" : "Show"} {settled.length} earlier{" "}
+                {settled.length === 1 ? "entry" : "entries"} (already settled)
+              </button>
+            )}
+            <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto">
+              {showSettled && settled.map((entry) => renderRow(entry, true))}
+              {current.map((entry) => renderRow(entry, false))}
+            </ul>
+          </div>
         )}
       </DialogContent>
     </Dialog>

@@ -106,3 +106,19 @@ export function withRunningBalance(
     return { ...entry, runningBalanceCents: running };
   });
 }
+
+/**
+ * Splits a pair's history at the last moment they were fully settled up
+ * (running balance back to 0). `current` is only what the outstanding
+ * balance is made of; `settled` is everything already paid off before that.
+ */
+export function splitAtLastSettleUp(entries: PairHistoryEntryWithRunning[]): {
+  settled: PairHistoryEntryWithRunning[];
+  current: PairHistoryEntryWithRunning[];
+} {
+  let lastZero = -1;
+  entries.forEach((entry, i) => {
+    if (entry.runningBalanceCents === 0) lastZero = i;
+  });
+  return { settled: entries.slice(0, lastZero + 1), current: entries.slice(lastZero + 1) };
+}
