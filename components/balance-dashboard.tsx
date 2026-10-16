@@ -36,7 +36,7 @@ export function BalanceDashboard({
                 <CardContent className="flex items-center justify-between gap-3">
                   <BalanceHistoryDialog balance={balance} />
                   <div className="flex shrink-0 items-center gap-2">
-                    <Badge variant="accent" className="tabular-nums">
+                    <Badge variant="accent" className="h-6 px-2.5 text-sm font-semibold tabular-nums">
                       {formatCents(balance.amountCents)}
                     </Badge>
                     <PayNowDialog balance={balance} onSettled={onSettled} />

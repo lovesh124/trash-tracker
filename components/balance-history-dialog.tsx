@@ -88,7 +88,7 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <p className={cn("font-medium tabular-nums", !addsToBalance && "text-primary")}>
+          <p className={cn("text-base font-semibold tabular-nums", !addsToBalance && "text-primary")}>
             {addsToBalance ? "+" : "−"}
             {formatCents(entry.amountCents)}
           </p>
