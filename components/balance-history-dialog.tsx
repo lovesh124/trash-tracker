@@ -105,17 +105,20 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (next) {
-          void load();
-        } else {
+        if (!next) {
           setEntries(null);
           setShowSettled(false);
         }
       }}
     >
+      {/* Load here, not in onOpenChange: Base UI only fires that for its own
+          interactions (Escape, outside click), not when `open` is set from outside. */}
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+          void load();
+        }}
         className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left text-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <InitialsAvatar name={from.name} />
