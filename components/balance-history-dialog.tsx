@@ -157,6 +157,11 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
 
         {!loading && !error && entries && entries.length > 0 && (
           <div className="flex flex-col gap-2">
+            {/* Newest first. Running totals are computed oldest-first, so only the display is reversed. */}
+            <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto">
+              {[...current].reverse().map((entry) => renderRow(entry, false))}
+              {showSettled && [...settled].reverse().map((entry) => renderRow(entry, true))}
+            </ul>
             {settled.length > 0 && (
               <button
                 type="button"
@@ -167,10 +172,6 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
                 {settled.length === 1 ? "entry" : "entries"} (already settled)
               </button>
             )}
-            <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto">
-              {showSettled && settled.map((entry) => renderRow(entry, true))}
-              {current.map((entry) => renderRow(entry, false))}
-            </ul>
           </div>
         )}
       </DialogContent>
