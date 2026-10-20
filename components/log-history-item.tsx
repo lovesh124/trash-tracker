@@ -48,12 +48,12 @@ export function LogHistoryItem({ log }: { log: ChoreLogWithRoommate }) {
       {log.photo_url && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="sm:max-w-lg" showCloseButton>
-            <DialogTitle>{log.roommate.name}&apos;s proof photo</DialogTitle>
+            <DialogTitle className="pr-8">{log.roommate.name}&apos;s proof photo</DialogTitle>
             {/* eslint-disable-next-line @next/next/no-img-element -- remote Supabase Storage URL, not a static local asset */}
             <img
               src={log.photo_url}
               alt={`Proof from ${log.roommate.name}`}
-              className="w-full rounded-lg object-contain"
+              className="max-h-[75dvh] w-full rounded-lg object-contain"
             />
           </DialogContent>
         </Dialog>

@@ -37,9 +37,9 @@ function SettlementProofThumbnail({ proofUrl, label }: { proofUrl: string; label
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg" showCloseButton>
-          <DialogTitle>{label}</DialogTitle>
+          <DialogTitle className="pr-8">{label}</DialogTitle>
           {/* eslint-disable-next-line @next/next/no-img-element -- remote Supabase Storage URL, not a static local asset */}
-          <img src={proofUrl} alt={label} className="w-full rounded-lg object-contain" />
+          <img src={proofUrl} alt={label} className="max-h-[75dvh] w-full rounded-lg object-contain" />
         </DialogContent>
       </Dialog>
     </>
