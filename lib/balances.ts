@@ -1,6 +1,6 @@
 import type { Roommate } from "@/lib/supabase/types";
 
-type NamedRoommate = Pick<Roommate, "id" | "name">;
+export type NamedRoommate = Pick<Roommate, "id" | "name">;
 
 export type DebtEntry = {
   /** The roommate who owes money. */
@@ -121,4 +121,23 @@ export function splitAtLastSettleUp(entries: PairHistoryEntryWithRunning[]): {
     if (entry.runningBalanceCents === 0) lastZero = i;
   });
   return { settled: entries.slice(0, lastZero + 1), current: entries.slice(lastZero + 1) };
+}
+
+export type RoommateTotal = { roommate: NamedRoommate; owedCents: number };
+
+/**
+ * How much each roommate is owed in total: the sum of every balance where
+ * they're the one owed money. What they themselves owe others is ignored.
+ * Each pair is already netted (same as the Balances list), so this matches
+ * adding up that person's rows there. Roommates owed nothing are left out;
+ * sorted most-owed first.
+ */
+export function totalOwedPerRoommate(balances: Balance[]): RoommateTotal[] {
+  const byId = new Map<string, RoommateTotal>();
+  for (const { toRoommate, amountCents } of balances) {
+    const entry = byId.get(toRoommate.id) ?? { roommate: toRoommate, owedCents: 0 };
+    entry.owedCents += amountCents;
+    byId.set(toRoommate.id, entry);
+  }
+  return [...byId.values()].sort((a, b) => b.owedCents - a.owedCents);
 }
