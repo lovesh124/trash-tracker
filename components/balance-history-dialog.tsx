@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { Money } from "@/components/money";
 import { formatCents } from "@/lib/money";
 import {
   splitAtLastSettleUp,
@@ -90,7 +91,7 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
         <div className="shrink-0 text-right">
           <p className={cn("text-base font-semibold tabular-nums", !addsToBalance && "text-primary")}>
             {addsToBalance ? "+" : "−"}
-            {formatCents(entry.amountCents)}
+            <Money cents={entry.amountCents} />
           </p>
           <p className="text-xs tabular-nums text-muted-foreground">
             {describeRunning(entry.runningBalanceCents)}

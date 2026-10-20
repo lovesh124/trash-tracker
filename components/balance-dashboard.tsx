@@ -1,8 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Money } from "@/components/money";
 import { Badge } from "@/components/ui/badge";
 import { BalanceHistoryDialog } from "@/components/balance-history-dialog";
 import { PayNowDialog } from "@/components/pay-now-dialog";
-import { formatCents } from "@/lib/money";
 import type { Balance } from "@/lib/balances";
 
 export function BalanceDashboard({
@@ -37,7 +37,7 @@ export function BalanceDashboard({
                   <BalanceHistoryDialog balance={balance} />
                   <div className="flex shrink-0 items-center gap-2">
                     <Badge variant="accent" className="h-6 px-2.5 text-sm font-semibold tabular-nums">
-                      {formatCents(balance.amountCents)}
+                      <Money cents={balance.amountCents} />
                     </Badge>
                     <PayNowDialog balance={balance} onSettled={onSettled} />
                   </div>

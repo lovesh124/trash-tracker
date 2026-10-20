@@ -1,5 +1,5 @@
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
-import { formatCents } from "@/lib/money";
+import { Money } from "@/components/money";
 import { totalOwedPerRoommate, type Balance } from "@/lib/balances";
 
 export function NetTotals({ balances }: { balances: Balance[] }) {
@@ -18,7 +18,7 @@ export function NetTotals({ balances }: { balances: Balance[] }) {
             <span className="min-w-0 flex-1 truncate font-medium">{roommate.name}</span>
             <span className="text-muted-foreground">is owed</span>
             <span className="min-w-20 text-right text-base font-semibold tabular-nums text-primary">
-              {formatCents(owedCents)}
+              <Money cents={owedCents} />
             </span>
           </li>
         ))}

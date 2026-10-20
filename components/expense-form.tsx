@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Money } from "@/components/money";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { centsToDollarString, formatCents, parseDollarsToCents, splitEvenly } from "@/lib/money";
+import { centsToDollarString, parseDollarsToCents, splitEvenly } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { Roommate } from "@/lib/supabase/types";
 
@@ -251,7 +252,8 @@ export function ExpenseForm({
                                   isPayer ? "text-muted-foreground" : "font-medium"
                                 )}
                               >
-                                {isPayer ? `own share ${formatCents(share)}` : `owes ${formatCents(share)}`}
+                                {isPayer ? "own share " : "owes "}
+                                <Money cents={share} />
                               </span>
                             )}
                           </label>

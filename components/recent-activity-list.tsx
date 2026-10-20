@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { HandCoins, Receipt } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { formatCents } from "@/lib/money";
 import type { ActivityItem } from "@/lib/supabase/types";
 
 const PAGE_SIZE = 10;
@@ -93,7 +93,7 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
                       {item.description}
                     </span>
                     <Badge variant="accent" className="tabular-nums">
-                      {formatCents(item.totalCents)}
+                      <Money cents={item.totalCents} />
                     </Badge>
                     {item.owerNames.length > 0 && (
                       <span className="text-muted-foreground">
@@ -107,7 +107,7 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
                     <span>paid</span>
                     <span className="font-medium">{item.to.name}</span>
                     <Badge variant="accent" className="tabular-nums">
-                      {formatCents(item.amountCents)}
+                      <Money cents={item.amountCents} />
                     </Badge>
                   </p>
                 )}
