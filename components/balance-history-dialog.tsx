@@ -77,26 +77,30 @@ export function BalanceHistoryDialog({ balance }: { balance: Balance }) {
       <li
         key={entry.id}
         className={cn(
-          "flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2 text-sm",
+          "flex items-start justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2 text-sm",
           isSettled && "opacity-60"
         )}
       >
-        <div className="min-w-0 flex-1">
-          <p className="truncate">{describe(entry)}</p>
+        {/* Long text wraps here instead of widening the row (which made the popup scroll sideways on phones). */}
+        <div className="min-w-0 flex-1 break-words">
+          <p>{describe(entry)}</p>
           <p className="text-xs text-muted-foreground">
             {entry.type === "expense" && `${nameOf(entry.owerId)}'s share · `}
             {formatDate(entry.createdAt)}
           </p>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className={cn("text-base font-semibold tabular-nums", !addsToBalance && "text-primary")}>
-            {addsToBalance ? "+" : "−"}
-            <Money cents={entry.amountCents} />
-          </p>
-          <p className="text-xs tabular-nums text-muted-foreground">
+          <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
             {describeRunning(entry.runningBalanceCents)}
           </p>
         </div>
+        <p
+          className={cn(
+            "shrink-0 whitespace-nowrap text-base font-semibold tabular-nums",
+            !addsToBalance && "text-primary"
+          )}
+        >
+          {addsToBalance ? "+" : "−"}
+          <Money cents={entry.amountCents} />
+        </p>
       </li>
     );
   }
