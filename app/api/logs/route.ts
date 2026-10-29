@@ -2,8 +2,7 @@ import { NextResponse, after } from "next/server";
 import { PHOTO_BUCKET, supabaseServer } from "@/lib/supabase/server";
 import { PhotoValidationError, uploadProofPhoto } from "@/lib/supabase/photo-upload";
 import { sendTurnReminderEmail } from "@/lib/email";
-import { getNextRoommate } from "@/lib/turn";
-import { getOrderedRoommates } from "@/lib/chores-server";
+import { getFairNextRoommate, getOrderedRoommates } from "@/lib/chores-server";
 import type { Roommate } from "@/lib/supabase/types";
 
 const PAGE_SIZE = 20;
@@ -81,8 +80,12 @@ export async function POST(request: Request) {
 
   const { data: allRoommates } = await getOrderedRoommates();
 
-  if (allRoommates) {
-    const nextRoommate = getNextRoommate(allRoommates as Roommate[], roommateId);
+  const next = allRoommates
+    ? await getFairNextRoommate("trash_logs", allRoommates as Roommate[])
+    : null;
+
+  if (next && "roommate" in next) {
+    const nextRoommate = next.roommate;
     if (nextRoommate.id !== roommateId && nextRoommate.email) {
       const email = nextRoommate.email;
       after(async () => {

@@ -1,9 +1,45 @@
 import { supabaseServer } from "@/lib/supabase/server";
-import { getNextRoommate } from "@/lib/turn";
+import { getNextRoommate, getRoommateAfter } from "@/lib/turn";
 import type { ChoreLogWithRoommate, CurrentTurn, Roommate } from "@/lib/supabase/types";
 
 /** Chore log tables all share the same shape (see migration.sql / migration_sweep.sql). */
 export type ChoreLogTable = "trash_logs" | "sweep_logs";
+
+/**
+ * Turns logged from this moment on are counted for the fair rotation (see
+ * getNextRoommate). Logs before it only decide who was up when counting
+ * started, so earlier imbalances are forgiven. Moving it later resets counts.
+ */
+export const ROTATION_COUNTS_SINCE = "2026-10-28T00:00:00-04:00";
+
+/** Who's up next for a chore under the fair-count rotation. */
+export async function getFairNextRoommate<R extends { id: string }>(
+  table: ChoreLogTable,
+  roommates: R[]
+): Promise<{ roommate: R } | { error: string }> {
+  const [countedRes, beforeRes] = await Promise.all([
+    supabaseServer.from(table).select("roommate_id").gte("taken_at", ROTATION_COUNTS_SINCE),
+    supabaseServer
+      .from(table)
+      .select("roommate_id")
+      .lt("taken_at", ROTATION_COUNTS_SINCE)
+      .order("taken_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (countedRes.error) return { error: countedRes.error.message };
+  if (beforeRes.error) return { error: beforeRes.error.message };
+
+  const startRoommate = getRoommateAfter(roommates, beforeRes.data?.roommate_id ?? null);
+  return {
+    roommate: getNextRoommate(
+      roommates,
+      countedRes.data.map((log) => log.roommate_id),
+      startRoommate.id
+    ),
+  };
+}
 
 export async function getOrderedRoommates() {
   return supabaseServer
@@ -51,11 +87,12 @@ export async function getCurrentTurn(
     return { error: lastLogError.message };
   }
 
-  const typedRoommates = roommates as Roommate[];
-  const typedLastLog = lastLog as ChoreLogWithRoommate | null;
-  const nextRoommate = getNextRoommate(typedRoommates, typedLastLog?.roommate_id ?? null);
+  const next = await getFairNextRoommate(table, roommates as Roommate[]);
+  if ("error" in next) {
+    return { error: next.error };
+  }
 
-  return { turn: { roommate: nextRoommate, lastLog: typedLastLog } };
+  return { turn: { roommate: next.roommate, lastLog: lastLog as ChoreLogWithRoommate | null } };
 }
 
 const REMINDER_INTERVAL_DAYS = 5;
