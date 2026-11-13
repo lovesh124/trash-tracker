@@ -21,6 +21,8 @@ export type ChoreLogWithRoommate = ChoreLog & {
 export type CurrentTurn = {
   roommate: Roommate;
   lastLog: ChoreLogWithRoommate | null;
+  /** Everyone in turn order for this round; `doneThisRound` = already ahead of the others. */
+  rotation: { roommate: Pick<Roommate, "id" | "name">; doneThisRound: boolean }[];
 };
 
 export type Expense = {

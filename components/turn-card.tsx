@@ -1,6 +1,8 @@
 import { ArrowRight, Trash2, type LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { InitialsAvatar } from "@/components/ui/initials-avatar";
+import { cn } from "@/lib/utils";
 import type { CurrentTurn } from "@/lib/supabase/types";
 
 function formatRelativeTime(iso: string) {
@@ -34,6 +36,29 @@ export function TurnCard({
         <p className="font-heading max-w-full text-3xl font-bold tracking-tight sm:text-4xl">
           {turn.roommate.name}&apos;s turn
         </p>
+        {turn.rotation.length > 1 && (
+          <ol aria-label="This round's order" className="flex flex-wrap justify-center gap-1.5">
+            {turn.rotation.map(({ roommate, doneThisRound }) => {
+              const isUp = roommate.id === turn.roommate.id;
+              return (
+                <li key={roommate.id} title={roommate.name}>
+                  <InitialsAvatar
+                    name={roommate.name}
+                    className={cn(
+                      "bg-primary-foreground/15 text-primary-foreground ring-primary-foreground/30 transition-all",
+                      isUp && "scale-110 ring-2 ring-accent",
+                      doneThisRound && "opacity-40"
+                    )}
+                  />
+                  <span className="sr-only">
+                    {roommate.name}
+                    {isUp ? " (up next)" : doneThisRound ? " (already went this round)" : ""}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        )}
         {turn.lastLog && (
           <div className="mt-2 flex items-center gap-2 rounded-full bg-primary-foreground/10 py-1 pl-3 pr-1 text-xs text-primary-foreground/75 ring-1 ring-primary-foreground/10">
             <span>Last done by {turn.lastLog.roommate.name}</span>

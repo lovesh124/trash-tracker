@@ -11,7 +11,7 @@ export function NetTotals({ balances }: { balances: Balance[] }) {
       <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         Totals owed
       </h3>
-      <ul className="flex flex-col divide-y divide-foreground/10 rounded-xl bg-[linear-gradient(180deg,var(--card),color-mix(in_oklch,var(--card),var(--muted)_50%))] ring-1 ring-foreground/10">
+      <ul className="stagger-children flex flex-col divide-y divide-foreground/10 rounded-xl bg-[linear-gradient(180deg,var(--card),color-mix(in_oklch,var(--card),var(--muted)_50%))] ring-1 ring-foreground/10">
         {totals.map(({ roommate, owedCents }) => (
           <li key={roommate.id} className="flex items-center gap-3 px-4 py-3 text-sm">
             <InitialsAvatar name={roommate.name} />

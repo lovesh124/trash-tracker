@@ -25,7 +25,7 @@ export function BalanceDashboard({
       )}
 
       {balances.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <div className="stagger-children flex flex-col gap-2">
           {balances.map((balance) => {
             const key = `${balance.fromRoommate.id}:${balance.toRoommate.id}`;
             return (

@@ -118,7 +118,7 @@ export default function HistoryPage() {
       )}
 
       {!loading && !error && logs.length > 0 && (
-        <ul className="flex flex-col gap-3">
+        <ul className="stagger-children flex flex-col gap-3">
           {logs.map((log) => (
             <LogHistoryItem key={log.id} log={log} chore={chore} onUndone={refresh} />
           ))}

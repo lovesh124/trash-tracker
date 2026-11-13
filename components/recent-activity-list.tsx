@@ -72,7 +72,7 @@ export function RecentActivityList({
       )}
 
       {activity.length > 0 && (
-        <ul className="flex flex-col gap-2">
+        <ul className="stagger-children flex flex-col gap-2">
           {pageItems.map((item) => (
             <li
               key={`${item.type}-${item.id}`}

@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
-import { getNextRoommate, getRoommateAfter } from "@/lib/turn";
+import { countTurns, getNextRoommate, getRoommateAfter, rotationFrom } from "@/lib/turn";
 import type { ChoreLogWithRoommate, CurrentTurn, Roommate } from "@/lib/supabase/types";
 
 /** Chore log tables all share the same shape (see migration.sql / migration_sweep.sql). */
@@ -16,7 +16,10 @@ export const ROTATION_COUNTS_SINCE = "2026-10-28T00:00:00-04:00";
 export async function getFairNextRoommate<R extends { id: string }>(
   table: ChoreLogTable,
   roommates: R[]
-): Promise<{ roommate: R } | { error: string }> {
+): Promise<
+  | { roommate: R; rotation: { roommate: R; doneThisRound: boolean }[] }
+  | { error: string }
+> {
   const [countedRes, beforeRes] = await Promise.all([
     supabaseServer.from(table).select("roommate_id").gte("taken_at", ROTATION_COUNTS_SINCE),
     supabaseServer
@@ -32,12 +35,15 @@ export async function getFairNextRoommate<R extends { id: string }>(
   if (beforeRes.error) return { error: beforeRes.error.message };
 
   const startRoommate = getRoommateAfter(roommates, beforeRes.data?.roommate_id ?? null);
+  const logRoommateIds = countedRes.data.map((log) => log.roommate_id);
+  const counts = countTurns(roommates, logRoommateIds);
+  const fewest = Math.min(...counts.values());
   return {
-    roommate: getNextRoommate(
-      roommates,
-      countedRes.data.map((log) => log.roommate_id),
-      startRoommate.id
-    ),
+    roommate: getNextRoommate(roommates, logRoommateIds, startRoommate.id),
+    rotation: rotationFrom(roommates, startRoommate.id).map((roommate) => ({
+      roommate,
+      doneThisRound: (counts.get(roommate.id) ?? 0) > fewest,
+    })),
   };
 }
 
@@ -92,7 +98,17 @@ export async function getCurrentTurn(
     return { error: next.error };
   }
 
-  return { turn: { roommate: next.roommate, lastLog: lastLog as ChoreLogWithRoommate | null } };
+  return {
+    turn: {
+      roommate: next.roommate,
+      lastLog: lastLog as ChoreLogWithRoommate | null,
+      // Only id + name: this also backs the public turn routes.
+      rotation: next.rotation.map(({ roommate, doneThisRound }) => ({
+        roommate: { id: roommate.id, name: roommate.name },
+        doneThisRound,
+      })),
+    },
+  };
 }
 
 const REMINDER_INTERVAL_DAYS = 5;

@@ -2,7 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Dark mode follows the phone/computer setting; no toggle or .dark class needed. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
 
 @theme inline {
   --color-background: var(--background);
@@ -83,38 +84,87 @@
   --sidebar-ring: oklch(0.57 0.1 145);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+@media (prefers-color-scheme: dark) {
+  /* Same hues as the light theme (green 145, gold 70, warm neutrals),
+     re-balanced for a dark background. Popups use the card color here:
+     a white box would glare in dark mode. */
+  :root {
+    color-scheme: dark;
+    --background: oklch(0.18 0.012 75);
+    --foreground: oklch(0.94 0.012 88);
+    --card: oklch(0.22 0.014 75);
+    --card-foreground: oklch(0.94 0.012 88);
+    --popover: oklch(0.23 0.014 75);
+    --popover-foreground: oklch(0.94 0.012 88);
+    --primary: oklch(0.65 0.11 145);
+    --primary-foreground: oklch(0.17 0.03 145);
+    --secondary: oklch(0.27 0.015 75);
+    --secondary-foreground: oklch(0.9 0.015 88);
+    --muted: oklch(0.26 0.014 75);
+    --muted-foreground: oklch(0.72 0.02 88);
+    --accent: oklch(0.78 0.12 75);
+    --accent-foreground: oklch(0.22 0.05 70);
+    --destructive: oklch(0.7 0.17 25);
+    --border: oklch(0.32 0.015 75);
+    --input: oklch(0.34 0.015 75);
+    --ring: oklch(0.65 0.11 145);
+    --sidebar: oklch(0.22 0.014 75);
+    --sidebar-foreground: oklch(0.94 0.012 88);
+    --sidebar-primary: oklch(0.65 0.11 145);
+    --sidebar-primary-foreground: oklch(0.17 0.03 145);
+    --sidebar-accent: oklch(0.27 0.015 75);
+    --sidebar-accent-foreground: oklch(0.9 0.015 88);
+    --sidebar-border: oklch(0.32 0.015 75);
+    --sidebar-ring: oklch(0.65 0.11 145);
+  }
+}
+
+/* Load-in and success animations. Turned off for anyone with "reduce motion" on. */
+@theme {
+  --animate-rise-in: rise-in 0.4s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  --animate-pop-in: pop-in 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes pop-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.3) rotate(-20deg);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* List items fade and rise in one after another (the first 8 are staggered). */
+.stagger-children > * {
+  animation: var(--animate-rise-in);
+}
+.stagger-children > :nth-child(2) { animation-delay: 40ms; }
+.stagger-children > :nth-child(3) { animation-delay: 80ms; }
+.stagger-children > :nth-child(4) { animation-delay: 120ms; }
+.stagger-children > :nth-child(5) { animation-delay: 160ms; }
+.stagger-children > :nth-child(6) { animation-delay: 200ms; }
+.stagger-children > :nth-child(7) { animation-delay: 240ms; }
+.stagger-children > :nth-child(n + 8) { animation-delay: 280ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise-in,
+  .animate-pop-in,
+  .stagger-children > * {
+    animation: none;
+  }
 }
 
 @layer base {
