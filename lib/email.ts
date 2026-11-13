@@ -25,6 +25,6 @@ export async function sendTurnReminderEmail(
     from: process.env.GMAIL_USER,
     to,
     subject: `It's your turn to ${choreAction}`,
-    text: `Hey ${roommateName}, it's your turn to ${choreAction}! Check Trash Tracker when you get a chance.`,
+    text: `Hey ${roommateName}, it's your turn to ${choreAction}! Check Trash/Expense Tracker when you get a chance.`,
   });
 }

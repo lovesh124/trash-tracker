@@ -20,8 +20,8 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Trash Tracker",
-  description: "Track whose turn it is to take out the trash",
+  title: "Trash/Expense Tracker",
+  description: "Track household chores and shared expenses",
 };
 
 export const viewport: Viewport = {
