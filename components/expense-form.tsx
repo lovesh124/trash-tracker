@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { centsToDollarString, parseDollarsToCents, splitEvenly } from "@/lib/money";
+import { centsToDollarString, formatCents, parseDollarsToCents, splitEvenly } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { Roommate } from "@/lib/supabase/types";
 
@@ -68,13 +68,25 @@ export function ExpenseForm({
   const evenShares =
     totalCents !== null ? splitEvenly(totalCents, participantIds, payerId) : new Map<string, number>();
 
-  function buildSplits(): { roommate_id: string; amount: string }[] | string {
+  type Split = { roommate_id: string; amount: string };
+
+  /** The splits plus the full bill total (`total` is the payer's share included), or an error message. */
+  function buildExpense(): { splits: Split[]; total?: string } | string {
     if (mode === "custom") {
       const splits = roommates
         .filter((r) => r.id !== payerId)
         .map((r) => ({ roommate_id: r.id, amount: amounts[r.id] ?? "" }))
         .filter((s) => parseDollarsToCents(s.amount) !== null);
-      return splits.length > 0 ? splits : "Assign an amount to at least one roommate";
+      if (splits.length === 0) return "Assign an amount to at least one roommate";
+
+      // The total is optional here; without it Recent Activity shows what's owed.
+      if (total.trim() === "") return { splits };
+      if (totalCents === null) return "Enter a valid total, or leave it blank";
+      const owedCents = splits.reduce((sum, s) => sum + parseDollarsToCents(s.amount)!, 0);
+      if (totalCents < owedCents) {
+        return `The total can't be less than what everyone owes (${formatCents(owedCents)})`;
+      }
+      return { splits, total: centsToDollarString(totalCents) };
     }
 
     if (totalCents === null) return "Enter the total amount";
@@ -85,7 +97,8 @@ export function ExpenseForm({
     const splits = participantIds
       .filter((id) => id !== payerId && (evenShares.get(id) ?? 0) > 0)
       .map((id) => ({ roommate_id: id, amount: centsToDollarString(evenShares.get(id)!) }));
-    return splits.length > 0 ? splits : "That total is too small to split";
+    if (splits.length === 0) return "That total is too small to split";
+    return { splits, total: centsToDollarString(totalCents) };
   }
 
   async function handleSubmit() {
@@ -98,9 +111,9 @@ export function ExpenseForm({
       return;
     }
 
-    const splits = buildSplits();
-    if (typeof splits === "string") {
-      toast.error(splits);
+    const expense = buildExpense();
+    if (typeof expense === "string") {
+      toast.error(expense);
       return;
     }
 
@@ -109,7 +122,12 @@ export function ExpenseForm({
       const res = await fetch("/api/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payer_id: payerId, description: description.trim(), splits }),
+        body: JSON.stringify({
+          payer_id: payerId,
+          description: description.trim(),
+          splits: expense.splits,
+          total: expense.total,
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -263,24 +281,41 @@ export function ExpenseForm({
                   </div>
                 </>
               ) : (
-                <div className="flex flex-col gap-1.5">
-                  <Label>Who owes what?</Label>
-                  <div className="flex flex-col gap-2">
-                    {owers.map((r) => (
-                      <div key={r.id} className="flex items-center gap-2">
-                        <span className="w-24 shrink-0 truncate text-sm">{r.name}</span>
-                        <Input
-                          inputMode="decimal"
-                          placeholder="0.00"
-                          value={amounts[r.id] ?? ""}
-                          onChange={(e) =>
-                            setAmounts((prev) => ({ ...prev, [r.id]: e.target.value }))
-                          }
-                        />
-                      </div>
-                    ))}
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="custom-total">
+                      Total bill <span className="font-normal text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Input
+                      id="custom-total"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      value={total}
+                      onChange={(e) => setTotal(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Include your own share so Recent Activity shows the full bill.
+                    </p>
                   </div>
-                </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label>Who owes what?</Label>
+                    <div className="flex flex-col gap-2">
+                      {owers.map((r) => (
+                        <div key={r.id} className="flex items-center gap-2">
+                          <span className="w-24 shrink-0 truncate text-sm">{r.name}</span>
+                          <Input
+                            inputMode="decimal"
+                            placeholder="0.00"
+                            value={amounts[r.id] ?? ""}
+                            onChange={(e) =>
+                              setAmounts((prev) => ({ ...prev, [r.id]: e.target.value }))
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           )}

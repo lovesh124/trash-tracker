@@ -22,7 +22,7 @@ export async function GET() {
       .limit(ACTIVITY_LIMIT),
     supabaseServer
       .from("expenses")
-      .select("id, description, created_at, payer:roommates(id, name), splits:expense_splits(amount_cents, roommate:roommates(id, name))")
+      .select("id, description, created_at, total_cents, payer:roommates(id, name), splits:expense_splits(amount_cents, roommate:roommates(id, name))")
       .order("created_at", { ascending: false })
       .limit(ACTIVITY_LIMIT),
   ]);
@@ -73,6 +73,7 @@ export async function GET() {
     id: string;
     description: string;
     created_at: string;
+    total_cents: number | null;
     payer: Pick<Roommate, "id" | "name"> | Pick<Roommate, "id" | "name">[] | null;
     splits: { amount_cents: number; roommate: Pick<Roommate, "id" | "name"> | Pick<Roommate, "id" | "name">[] | null }[];
   };
@@ -89,7 +90,8 @@ export async function GET() {
         createdAt: expense.created_at,
         payer,
         description: expense.description,
-        totalCents: expense.splits.reduce((sum, s) => sum + s.amount_cents, 0),
+        // Older expenses have no stored total; the sum of what's owed is the best we have.
+        totalCents: expense.total_cents ?? expense.splits.reduce((sum, s) => sum + s.amount_cents, 0),
         owerNames: expense.splits.flatMap((s) => {
           const roommate = one(s.roommate);
           return roommate ? [roommate.name] : [];

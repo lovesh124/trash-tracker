@@ -12,6 +12,8 @@ export async function POST(request: Request) {
   const payerId = body?.payer_id;
   const description = typeof body?.description === "string" ? body.description.trim() : "";
   const splitsInput: SplitInput[] = Array.isArray(body?.splits) ? body.splits : [];
+  // Optional full bill amount (including the payer's own share), as a dollar string.
+  const totalInput: unknown = body?.total;
 
   if (typeof payerId !== "string" || payerId.length === 0) {
     return NextResponse.json({ error: "payer_id is required" }, { status: 400 });
@@ -59,6 +61,21 @@ export async function POST(request: Request) {
     splits.push({ roommate_id: split.roommate_id, amount_cents: amountCents });
   }
 
+  let totalCents: number | null = null;
+  if (totalInput !== undefined && totalInput !== null && totalInput !== "") {
+    totalCents = typeof totalInput === "string" ? parseDollarsToCents(totalInput) : null;
+    if (totalCents === null) {
+      return NextResponse.json({ error: "Invalid total" }, { status: 400 });
+    }
+    const owedCents = splits.reduce((sum, split) => sum + split.amount_cents, 0);
+    if (totalCents < owedCents) {
+      return NextResponse.json(
+        { error: "The total can't be less than what everyone owes" },
+        { status: 400 }
+      );
+    }
+  }
+
   const { data: payer, error: payerError } = await supabaseServer
     .from("roommates")
     .select("id")
@@ -74,7 +91,7 @@ export async function POST(request: Request) {
 
   const { data: expense, error: insertExpenseError } = await supabaseServer
     .from("expenses")
-    .insert({ payer_id: payerId, description })
+    .insert({ payer_id: payerId, description, total_cents: totalCents })
     .select("id")
     .single();
 

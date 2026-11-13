@@ -28,6 +28,7 @@ export type Expense = {
   payer_id: string;
   description: string;
   created_at: string;
+  total_cents: number | null;
 };
 
 export type ExpenseSplit = {
