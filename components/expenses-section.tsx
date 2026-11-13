@@ -70,7 +70,7 @@ export function ExpensesSection({ roommates }: { roommates: Roommate[] }) {
           <ExpenseForm roommates={roommates} onAdded={load} />
           <BalanceDashboard balances={balances} onSettled={load} />
           <NetTotals balances={balances} />
-          <RecentActivityList activity={activity} />
+          <RecentActivityList activity={activity} onChanged={load} />
         </>
       )}
     </section>

@@ -78,3 +78,6 @@ export type ActivityItem =
       amountCents: number;
       proofUrl: string | null;
     };
+
+/** Things that can be undone (deleted) via /api/undo. */
+export type UndoType = "trash" | "sweep" | "expense" | "settlement";

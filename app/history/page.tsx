@@ -52,6 +52,11 @@ export default function HistoryPage() {
     load(0, chore).finally(() => setLoading(false));
   }, [load, chore]);
 
+  function refresh() {
+    setPage(0);
+    void load(0, chore);
+  }
+
   async function loadMore() {
     setLoadingMore(true);
     const nextPage = page + 1;
@@ -115,7 +120,7 @@ export default function HistoryPage() {
       {!loading && !error && logs.length > 0 && (
         <ul className="flex flex-col gap-3">
           {logs.map((log) => (
-            <LogHistoryItem key={log.id} log={log} />
+            <LogHistoryItem key={log.id} log={log} chore={chore} onUndone={refresh} />
           ))}
         </ul>
       )}

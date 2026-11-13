@@ -36,3 +36,14 @@ export async function uploadProofPhoto(
   const { data } = supabaseServer.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }
+
+/** Best-effort removal of a proof photo by its public URL. Failures are logged, never thrown. */
+export async function deleteProofPhoto(bucket: string, publicUrl: string): Promise<void> {
+  const marker = `/storage/v1/object/public/${bucket}/`;
+  const index = publicUrl.indexOf(marker);
+  if (index === -1) return;
+
+  const path = decodeURIComponent(publicUrl.slice(index + marker.length));
+  const { error } = await supabaseServer.storage.from(bucket).remove([path]);
+  if (error) console.error("Failed to delete proof photo:", error.message);
+}

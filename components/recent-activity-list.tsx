@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { UndoButton } from "@/components/undo-button";
 import type { ActivityItem } from "@/lib/supabase/types";
 
 const PAGE_SIZE = 10;
@@ -46,7 +47,13 @@ function SettlementProofThumbnail({ proofUrl, label }: { proofUrl: string; label
   );
 }
 
-export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
+export function RecentActivityList({
+  activity,
+  onChanged,
+}: {
+  activity: ActivityItem[];
+  onChanged: () => void;
+}) {
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(activity.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -113,6 +120,16 @@ export function RecentActivityList({ activity }: { activity: ActivityItem[] }) {
                 )}
                 <p className="text-xs text-muted-foreground">{formatDateTime(item.createdAt)}</p>
               </div>
+              <UndoButton
+                type={item.type}
+                id={item.id}
+                summary={
+                  item.type === "expense"
+                    ? `${item.payer.name}'s expense "${item.description}"`
+                    : `${item.from.name}'s payment to ${item.to.name}`
+                }
+                onUndone={onChanged}
+              />
             </li>
           ))}
         </ul>

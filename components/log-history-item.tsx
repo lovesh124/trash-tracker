@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { UndoButton } from "@/components/undo-button";
 import type { ChoreLogWithRoommate } from "@/lib/supabase/types";
 
 function formatDateTime(iso: string) {
@@ -12,7 +13,15 @@ function formatDateTime(iso: string) {
   });
 }
 
-export function LogHistoryItem({ log }: { log: ChoreLogWithRoommate }) {
+export function LogHistoryItem({
+  log,
+  chore,
+  onUndone,
+}: {
+  log: ChoreLogWithRoommate;
+  chore: "trash" | "sweep";
+  onUndone: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -43,6 +52,12 @@ export function LogHistoryItem({ log }: { log: ChoreLogWithRoommate }) {
             {formatDateTime(log.taken_at)}
           </p>
         </div>
+        <UndoButton
+          type={chore}
+          id={log.id}
+          summary={`${log.roommate.name}'s ${chore} log from ${formatDateTime(log.taken_at)}`}
+          onUndone={onUndone}
+        />
       </li>
 
       {log.photo_url && (
