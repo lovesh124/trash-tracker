@@ -106,21 +106,15 @@ export default function Home() {
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-9 px-4 py-8 sm:px-6 sm:py-12">
       <header className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-heading flex items-center gap-2 text-xl font-semibold tracking-tight sm:text-2xl">
-            <Trash2 className="size-6 shrink-0 text-primary" />
+          {/* Slightly smaller on phones so the title and the full History button fit on one row. */}
+          <h1 className="font-heading flex items-center gap-2 text-lg font-semibold tracking-tight sm:text-2xl">
+            <Trash2 className="size-5 shrink-0 text-primary sm:size-6" />
             Trash/Expense Tracker
           </h1>
         </div>
-        {/* Icon-only on phones so the longer title stays on one line. */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-10 shrink-0 px-3"
-          aria-label="History"
-          render={<Link href="/history" />}
-        >
+        <Button variant="ghost" size="sm" className="h-10 shrink-0 px-3" render={<Link href="/history" />}>
           <History className="size-4" />
-          <span className="hidden sm:inline">History</span>
+          History
         </Button>
       </header>
 
