@@ -162,7 +162,7 @@ export default function Home() {
           </div>
 
           {/* Keyed by chore so switching Trash/Sweep replays the entrance. */}
-          <section key={chore} className="flex animate-rise-in flex-col gap-3">
+          <section key={chore} className="flex animate-scale-in flex-col gap-3">
             <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               {config.sectionLabel}
             </h3>

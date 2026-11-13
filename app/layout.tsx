@@ -27,12 +27,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  // Tints the phone browser's address bar. Hex versions of --primary (light)
-  // and a deeper green that sits better against the dark theme.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#49794a" },
-    { media: "(prefers-color-scheme: dark)", color: "#1d341e" },
-  ],
+  // Tints the phone browser's address bar: the light theme's --primary green,
+  // kept the same in dark mode.
+  themeColor: "#49794a",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

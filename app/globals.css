@@ -119,15 +119,29 @@
   }
 }
 
-/* Load-in and success animations. Turned off for anyone with "reduce motion" on. */
+/* Load-in and success animations. The cubic-bezier overshoots past 1, which
+   gives the rise and scale a small spring at the end. Turned off for anyone
+   with "reduce motion" on. */
 @theme {
-  --animate-rise-in: rise-in 0.4s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  --animate-rise-in: rise-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-scale-in: scale-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-pop-in: pop-in 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both;
 
   @keyframes rise-in {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
     }
     to {
       opacity: 1;
@@ -151,16 +165,17 @@
 .stagger-children > * {
   animation: var(--animate-rise-in);
 }
-.stagger-children > :nth-child(2) { animation-delay: 40ms; }
-.stagger-children > :nth-child(3) { animation-delay: 80ms; }
-.stagger-children > :nth-child(4) { animation-delay: 120ms; }
-.stagger-children > :nth-child(5) { animation-delay: 160ms; }
-.stagger-children > :nth-child(6) { animation-delay: 200ms; }
-.stagger-children > :nth-child(7) { animation-delay: 240ms; }
-.stagger-children > :nth-child(n + 8) { animation-delay: 280ms; }
+.stagger-children > :nth-child(2) { animation-delay: 50ms; }
+.stagger-children > :nth-child(3) { animation-delay: 100ms; }
+.stagger-children > :nth-child(4) { animation-delay: 150ms; }
+.stagger-children > :nth-child(5) { animation-delay: 200ms; }
+.stagger-children > :nth-child(6) { animation-delay: 250ms; }
+.stagger-children > :nth-child(7) { animation-delay: 300ms; }
+.stagger-children > :nth-child(n + 8) { animation-delay: 350ms; }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-rise-in,
+  .animate-scale-in,
   .animate-pop-in,
   .stagger-children > * {
     animation: none;
