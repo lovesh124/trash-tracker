@@ -141,3 +141,92 @@ export function totalOwedPerRoommate(balances: Balance[]): RoommateTotal[] {
   }
   return [...byId.values()].sort((a, b) => b.owedCents - a.owedCents);
 }
+
+/** One expense split (ower owes the payer `amountCents` for one expense), flattened from the DB. */
+export type SplitRecord = {
+  id: string;
+  expenseId: string;
+  owerId: string;
+  payerId: string;
+  amountCents: number;
+  description: string;
+  createdAt: string;
+};
+
+/** One settle-up payment: `fromId` paid `toId` `amountCents`. */
+export type SettlementRecord = {
+  id: string;
+  fromId: string;
+  toId: string;
+  amountCents: number;
+  createdAt: string;
+};
+
+export function pairKey(a: string, b: string): string {
+  return [a, b].sort().join(":");
+}
+
+/**
+ * Every split and settlement as pair-history entries, grouped by unordered
+ * pair (see pairKey) and sorted oldest first. A settlement is recorded as a
+ * debt in the opposite direction of the payment, so it nets against the
+ * original debt (same convention as computeBalances' callers).
+ */
+export function buildPairEntries(
+  splits: SplitRecord[],
+  settlements: SettlementRecord[]
+): Map<string, PairHistoryEntry[]> {
+  const byPair = new Map<string, PairHistoryEntry[]>();
+  const add = (key: string, entry: PairHistoryEntry) => {
+    const list = byPair.get(key) ?? [];
+    list.push(entry);
+    byPair.set(key, list);
+  };
+
+  for (const split of splits) {
+    if (split.owerId === split.payerId) continue;
+    add(pairKey(split.owerId, split.payerId), {
+      id: `expense-${split.id}`,
+      type: "expense",
+      createdAt: split.createdAt,
+      description: split.description,
+      amountCents: split.amountCents,
+      owerId: split.owerId,
+      creditorId: split.payerId,
+    });
+  }
+  for (const settlement of settlements) {
+    add(pairKey(settlement.fromId, settlement.toId), {
+      id: `settlement-${settlement.id}`,
+      type: "settlement",
+      createdAt: settlement.createdAt,
+      description: "Payment",
+      amountCents: settlement.amountCents,
+      owerId: settlement.toId,
+      creditorId: settlement.fromId,
+    });
+  }
+
+  for (const list of byPair.values()) {
+    list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+  return byPair;
+}
+
+/**
+ * Ids of the expense splits that have been paid back. "Pay Now" always settles
+ * the whole balance between two people, so once a pair's running balance is
+ * back to $0, every split between them up to that point is paid — whatever
+ * its category. (Offsetting expenses that net to exactly $0 also count: the
+ * debt is genuinely cleared.)
+ */
+export function settledSplitIds(splits: SplitRecord[], settlements: SettlementRecord[]): Set<string> {
+  const settled = new Set<string>();
+  for (const [key, entries] of buildPairEntries(splits, settlements)) {
+    const fromId = key.split(":")[0];
+    for (const entry of splitAtLastSettleUp(withRunningBalance(entries, fromId)).settled) {
+      if (entry.type === "expense") settled.add(entry.id.slice("expense-".length));
+    }
+  }
+  return settled;
+}

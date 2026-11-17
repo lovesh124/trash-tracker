@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
+import { settledSplitIds } from "@/lib/balances";
+import { isExpenseCategory } from "@/lib/categories";
+import { loadLedger } from "@/lib/ledger-server";
 import type { ActivityItem, Roommate } from "@/lib/supabase/types";
 
 const PAGE_SIZE = 10;
@@ -18,36 +21,58 @@ const one = <T,>(value: T | T[] | null): T | null => (Array.isArray(value) ? (va
  * on page N can come from further down either table.
  */
 export async function GET(request: Request) {
-  const requested = Math.floor(Number(new URL(request.url).searchParams.get("page"))) || 1;
+  const { searchParams } = new URL(request.url);
+  const requested = Math.floor(Number(searchParams.get("page"))) || 1;
   const page = Math.min(Math.max(1, requested), MAX_PAGES);
   const rowsNeeded = page * PAGE_SIZE;
 
-  const [expenseCountRes, settlementCountRes, expensesRes, settlementsRes] = await Promise.all([
-    supabaseServer.from("expenses").select("id", { count: "exact", head: true }),
-    supabaseServer.from("settlements").select("id", { count: "exact", head: true }),
-    supabaseServer
-      .from("expenses")
-      .select("id, description, created_at, total_cents, payer:roommates(id, name), splits:expense_splits(amount_cents, roommate:roommates(id, name))")
-      .order("created_at", { ascending: false })
-      .limit(rowsNeeded),
-    supabaseServer
-      .from("settlements")
-      .select("id, amount_cents, proof_url, created_at, from:roommates!settlements_from_roommate_id_fkey(id, name), to:roommates!settlements_to_roommate_id_fkey(id, name)")
-      .order("created_at", { ascending: false })
-      .limit(rowsNeeded),
+  // Optional category filter. Payments aren't tied to a category (a settle-up
+  // pays everything at once), so a filtered feed shows only expenses.
+  const categoryParam = searchParams.get("category");
+  if (categoryParam !== null && !isExpenseCategory(categoryParam)) {
+    return NextResponse.json({ error: "Unknown category" }, { status: 400 });
+  }
+  const category = categoryParam;
+
+  const expenseCountQuery = supabaseServer.from("expenses").select("id", { count: "exact", head: true });
+  const expensesQuery = supabaseServer
+    .from("expenses")
+    .select("id, description, created_at, total_cents, category, payer:roommates(id, name), splits:expense_splits(id, amount_cents, roommate:roommates(id, name))")
+    .order("created_at", { ascending: false })
+    .limit(rowsNeeded);
+
+  const [expenseCountRes, settlementCountRes, expensesRes, settlementsRes, ledger] = await Promise.all([
+    category ? expenseCountQuery.eq("category", category) : expenseCountQuery,
+    category
+      ? Promise.resolve({ count: 0, error: null })
+      : supabaseServer.from("settlements").select("id", { count: "exact", head: true }),
+    category ? expensesQuery.eq("category", category) : expensesQuery,
+    category
+      ? Promise.resolve({ data: [], error: null })
+      : supabaseServer
+          .from("settlements")
+          .select("id, amount_cents, proof_url, created_at, from:roommates!settlements_from_roommate_id_fkey(id, name), to:roommates!settlements_to_roommate_id_fkey(id, name)")
+          .order("created_at", { ascending: false })
+          .limit(rowsNeeded),
+    loadLedger(),
   ]);
 
   for (const res of [expenseCountRes, settlementCountRes, expensesRes, settlementsRes]) {
     if (res.error) return NextResponse.json({ error: res.error.message }, { status: 500 });
   }
+  if ("error" in ledger) {
+    return NextResponse.json({ error: ledger.error }, { status: 500 });
+  }
+  const settled = settledSplitIds(ledger.splits, ledger.settlements);
 
   type ExpenseRow = {
     id: string;
     description: string;
     created_at: string;
     total_cents: number | null;
+    category: string;
     payer: NamedRoommate | NamedRoommate[] | null;
-    splits: { amount_cents: number; roommate: NamedRoommate | NamedRoommate[] | null }[];
+    splits: { id: string; amount_cents: number; roommate: NamedRoommate | NamedRoommate[] | null }[];
   };
 
   const expenseItems: ActivityItem[] = (expensesRes.data as ExpenseRow[]).flatMap((expense) => {
@@ -66,6 +91,11 @@ export async function GET(request: Request) {
           const roommate = one(s.roommate);
           return roommate ? [roommate.name] : [];
         }),
+        category: isExpenseCategory(expense.category) ? expense.category : "other",
+        paidBack: {
+          settled: expense.splits.filter((s) => settled.has(s.id)).length,
+          total: expense.splits.length,
+        },
       },
     ];
   });

@@ -1,24 +1,61 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, HandCoins, Receipt } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, HandCoins } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UndoButton } from "@/components/undo-button";
+import { CATEGORY_ICONS } from "@/components/category-icon";
+import { EXPENSE_CATEGORIES, categoryLabel, type ExpenseCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import type { ActivityItem } from "@/lib/supabase/types";
 
 /** How many page numbers are shown at once, around the current page. */
 const PAGE_WINDOW = 3;
 
+type Filter = "all" | ExpenseCategory;
+
+function PaidBackStatus({ settled, total }: { settled: number; total: number }) {
+  if (total === 0) return null;
+  if (settled === total) {
+    return (
+      <span className="inline-flex items-center gap-0.5 font-medium text-primary">
+        <Check className="size-3" /> Paid back
+      </span>
+    );
+  }
+  if (settled === 0) return <span>Still owed</span>;
+  return (
+    <span>
+      {settled} of {total} paid back
+    </span>
+  );
+}
+
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function ActivityIcon({ item }: { item: ActivityItem }) {
+  const tracked = item.type === "expense" && item.category !== "other";
+  const Icon = item.type === "expense" ? CATEGORY_ICONS[item.category] : HandCoins;
+  return (
+    <div
+      className={cn(
+        "flex size-9 shrink-0 items-center justify-center rounded-lg",
+        tracked ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+      )}
+      title={item.type === "expense" ? categoryLabel(item.category) : "Payment"}
+    >
+      <Icon className="size-4" />
+    </div>
+  );
 }
 
 function SettlementProofThumbnail({ proofUrl, label }: { proofUrl: string; label: string }) {
@@ -59,6 +96,7 @@ export function RecentActivityList({
   onChanged: () => void;
 }) {
   const [page, setPage] = useState(1);
+  const [filter, setFilter] = useState<Filter>("all");
   const [result, setResult] = useState<{
     key: string;
     items: ActivityItem[];
@@ -68,12 +106,14 @@ export function RecentActivityList({
 
   // "Loading" is derived (what's shown isn't for this page/refresh yet), so the
   // effect never has to set state synchronously.
-  const requestKey = `${page}:${refreshKey}`;
+  const requestKey = `${filter}:${page}:${refreshKey}`;
   const loading = result?.key !== requestKey;
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/activity?page=${page}`)
+    const params = new URLSearchParams({ page: String(page) });
+    if (filter !== "all") params.set("category", filter);
+    fetch(`/api/activity?${params}`)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Request failed"))))
       .then((data: { items: ActivityItem[]; totalPages: number }) => {
         if (cancelled) return;
@@ -96,7 +136,7 @@ export function RecentActivityList({
     return () => {
       cancelled = true;
     };
-  }, [page, requestKey]);
+  }, [page, filter, requestKey]);
 
   const items = result?.items ?? [];
   const totalPages = result?.totalPages ?? 1;
@@ -108,6 +148,28 @@ export function RecentActivityList({
       <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
         Recent Activity
       </h3>
+
+      <div className="-mx-1 overflow-x-auto px-1">
+        <div className="inline-flex rounded-full bg-muted p-1 ring-1 ring-foreground/10">
+          {([{ key: "all", label: "All" }, ...EXPENSE_CATEGORIES] as const).map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={filter === key}
+              onClick={() => {
+                setFilter(key);
+                setPage(1);
+              }}
+              className={cn(
+                "whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-all",
+                filter === key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {!result && (
         <div className="flex flex-col gap-2" role="status" aria-label="Loading recent activity">
@@ -125,7 +187,7 @@ export function RecentActivityList({
 
       {result && !result.failed && items.length === 0 && (
         <p className="rounded-xl border border-dashed border-primary/25 bg-card/60 px-6 py-10 text-center text-sm text-muted-foreground">
-          No expenses yet.
+          {filter === "all" ? "No expenses yet." : `No ${categoryLabel(filter)} expenses yet.`}
         </p>
       )}
 
@@ -142,13 +204,7 @@ export function RecentActivityList({
                   label={`Proof that ${item.from.name} paid ${item.to.name}`}
                 />
               ) : (
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                  {item.type === "expense" ? (
-                    <Receipt className="size-4" />
-                  ) : (
-                    <HandCoins className="size-4" />
-                  )}
-                </div>
+                <ActivityIcon item={item} />
               )}
               <div className="min-w-0 flex-1">
                 {item.type === "expense" ? (
@@ -176,7 +232,15 @@ export function RecentActivityList({
                     </Badge>
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground">{formatDateTime(item.createdAt)}</p>
+                <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                  <span>{formatDateTime(item.createdAt)}</span>
+                  {item.type === "expense" && item.paidBack.total > 0 && (
+                    <>
+                      <span aria-hidden>·</span>
+                      <PaidBackStatus {...item.paidBack} />
+                    </>
+                  )}
+                </p>
               </div>
               <UndoButton
                 type={item.type}

@@ -5,6 +5,7 @@ import { Wallet } from "lucide-react";
 import { ExpenseForm } from "@/components/expense-form";
 import { BalanceDashboard } from "@/components/balance-dashboard";
 import { NetTotals } from "@/components/net-totals";
+import { CategorySpending } from "@/components/category-spending";
 import { RecentActivityList } from "@/components/recent-activity-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Balance } from "@/lib/balances";
@@ -71,6 +72,7 @@ export function ExpensesSection({ roommates }: { roommates: Roommate[] }) {
           <ExpenseForm roommates={roommates} onAdded={load} />
           <BalanceDashboard balances={balances} onSettled={load} />
           <NetTotals balances={balances} />
+          <CategorySpending refreshKey={refreshKey} />
           <RecentActivityList refreshKey={refreshKey} onChanged={load} />
         </>
       )}

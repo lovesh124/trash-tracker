@@ -1,3 +1,5 @@
+import type { ExpenseCategory } from "@/lib/categories";
+
 export type Roommate = {
   id: string;
   name: string;
@@ -29,6 +31,7 @@ export type Expense = {
   description: string;
   created_at: string;
   total_cents: number | null;
+  category: ExpenseCategory;
 };
 
 export type ExpenseSplit = {
@@ -68,6 +71,9 @@ export type ActivityItem =
       description: string;
       totalCents: number;
       owerNames: string[];
+      category: ExpenseCategory;
+      /** How many of the people who owe on this expense have been paid back (via a settle-up). */
+      paidBack: { settled: number; total: number };
     }
   | {
       type: "settlement";
@@ -81,3 +87,12 @@ export type ActivityItem =
 
 /** Things that can be undone (deleted) via /api/undo. */
 export type UndoType = "trash" | "sweep" | "expense" | "settlement";
+
+/** A recent Electricity/Walmart expense with each person's share (see /api/spending). */
+export type SpendingExpense = {
+  id: string;
+  category: ExpenseCategory;
+  createdAt: string;
+  totalCents: number;
+  shares: { roommate: Pick<Roommate, "id" | "name">; cents: number }[];
+};

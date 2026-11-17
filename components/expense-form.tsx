@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/select";
 import { centsToDollarString, formatCents, parseDollarsToCents, splitEvenly } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { CATEGORY_ICONS } from "@/components/category-icon";
+import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@/lib/categories";
 import type { Roommate } from "@/lib/supabase/types";
 
 type SplitMode = "even" | "custom";
@@ -38,6 +40,7 @@ export function ExpenseForm({
   const [open, setOpen] = useState(false);
   const [payerId, setPayerId] = useState<string>("");
   const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<ExpenseCategory>("other");
   const [mode, setMode] = useState<SplitMode>("even");
   const [total, setTotal] = useState("");
   // Tracked as who's left *out*, so everyone is included by default.
@@ -48,6 +51,7 @@ export function ExpenseForm({
   function resetForm() {
     setPayerId("");
     setDescription("");
+    setCategory("other");
     setMode("even");
     setTotal("");
     setExcludedIds(new Set());
@@ -125,6 +129,7 @@ export function ExpenseForm({
         body: JSON.stringify({
           payer_id: payerId,
           description: description.trim(),
+          category,
           splits: expense.splits,
           total: expense.total,
         }),
@@ -190,6 +195,32 @@ export function ExpenseForm({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>Category</Label>
+            <div className="inline-flex self-start rounded-full bg-muted p-1 ring-1 ring-foreground/10">
+              {EXPENSE_CATEGORIES.map(({ key, label }) => {
+                const Icon = CATEGORY_ICONS[key];
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setCategory(key)}
+                    aria-pressed={category === key}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-all",
+                      category === key
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="size-3.5" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">

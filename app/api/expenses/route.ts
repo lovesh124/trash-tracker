@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { parseDollarsToCents } from "@/lib/money";
+import { isExpenseCategory } from "@/lib/categories";
 
 const MAX_DESCRIPTION_LENGTH = 200;
 
@@ -14,12 +15,16 @@ export async function POST(request: Request) {
   const splitsInput: SplitInput[] = Array.isArray(body?.splits) ? body.splits : [];
   // Optional full bill amount (including the payer's own share), as a dollar string.
   const totalInput: unknown = body?.total;
+  const categoryInput: unknown = body?.category ?? "other";
 
   if (typeof payerId !== "string" || payerId.length === 0) {
     return NextResponse.json({ error: "payer_id is required" }, { status: 400 });
   }
   if (description.length === 0) {
     return NextResponse.json({ error: "Description is required" }, { status: 400 });
+  }
+  if (!isExpenseCategory(categoryInput)) {
+    return NextResponse.json({ error: "Unknown category" }, { status: 400 });
   }
   if (description.length > MAX_DESCRIPTION_LENGTH) {
     return NextResponse.json({ error: "Description is too long" }, { status: 400 });
@@ -91,7 +96,7 @@ export async function POST(request: Request) {
 
   const { data: expense, error: insertExpenseError } = await supabaseServer
     .from("expenses")
-    .insert({ payer_id: payerId, description, total_cents: totalCents })
+    .insert({ payer_id: payerId, description, total_cents: totalCents, category: categoryInput })
     .select("id")
     .single();
 
