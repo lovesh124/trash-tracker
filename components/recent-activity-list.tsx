@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { HandCoins, Receipt } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, HandCoins, Receipt } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UndoButton } from "@/components/undo-button";
+import { cn } from "@/lib/utils";
 import type { ActivityItem } from "@/lib/supabase/types";
 
-const PAGE_SIZE = 10;
+/** How many page numbers are shown at once, around the current page. */
+const PAGE_WINDOW = 3;
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
@@ -48,16 +51,57 @@ function SettlementProofThumbnail({ proofUrl, label }: { proofUrl: string; label
 }
 
 export function RecentActivityList({
-  activity,
+  refreshKey,
   onChanged,
 }: {
-  activity: ActivityItem[];
+  /** Changes whenever balances reload (new expense, payment, undo), to refetch the current page. */
+  refreshKey: number;
   onChanged: () => void;
 }) {
   const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(activity.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const pageItems = activity.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const [result, setResult] = useState<{
+    key: string;
+    items: ActivityItem[];
+    totalPages: number;
+    failed: boolean;
+  } | null>(null);
+
+  // "Loading" is derived (what's shown isn't for this page/refresh yet), so the
+  // effect never has to set state synchronously.
+  const requestKey = `${page}:${refreshKey}`;
+  const loading = result?.key !== requestKey;
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/activity?page=${page}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Request failed"))))
+      .then((data: { items: ActivityItem[]; totalPages: number }) => {
+        if (cancelled) return;
+        // e.g. an undo emptied the last page: step back to the new last page.
+        if (page > data.totalPages) {
+          setPage(data.totalPages);
+          return;
+        }
+        setResult({ key: requestKey, items: data.items, totalPages: data.totalPages, failed: false });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setResult((prev) => ({
+          key: requestKey,
+          items: prev?.items ?? [],
+          totalPages: prev?.totalPages ?? 1,
+          failed: true,
+        }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, requestKey]);
+
+  const items = result?.items ?? [];
+  const totalPages = result?.totalPages ?? 1;
+  const firstShown = Math.max(1, Math.min(page - 1, totalPages - PAGE_WINDOW + 1));
+  const shownPages = Array.from({ length: Math.min(PAGE_WINDOW, totalPages) }, (_, i) => firstShown + i);
 
   return (
     <div className="flex flex-col gap-3">
@@ -65,15 +109,29 @@ export function RecentActivityList({
         Recent Activity
       </h3>
 
-      {activity.length === 0 && (
+      {!result && (
+        <div className="flex flex-col gap-2" role="status" aria-label="Loading recent activity">
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+        </div>
+      )}
+
+      {result?.failed && (
+        <p className="rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-center text-sm text-destructive">
+          Couldn&apos;t load activity. Check your connection and try again.
+        </p>
+      )}
+
+      {result && !result.failed && items.length === 0 && (
         <p className="rounded-xl border border-dashed border-primary/25 bg-card/60 px-6 py-10 text-center text-sm text-muted-foreground">
           No expenses yet.
         </p>
       )}
 
-      {activity.length > 0 && (
-        <ul className="stagger-children flex flex-col gap-2">
-          {pageItems.map((item) => (
+      {items.length > 0 && (
+        <ul className={cn("stagger-children flex flex-col gap-2 transition-opacity", loading && "opacity-60")}>
+          {items.map((item) => (
             <li
               key={`${item.type}-${item.id}`}
               className="flex items-center gap-3 rounded-xl bg-[linear-gradient(180deg,var(--card),color-mix(in_oklch,var(--card),var(--muted)_50%))] p-4 shadow-[0_8px_24px_-20px_oklch(0.3_0.06_145)] ring-1 ring-foreground/10 transition-all hover:brightness-97"
@@ -136,20 +194,46 @@ export function RecentActivityList({
       )}
 
       {totalPages > 1 && (
-        <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+        <nav aria-label="Recent activity pages" className="flex flex-col items-center gap-1.5 pt-1">
+          <div className="flex items-center gap-1.5">
             <Button
-              key={n}
               type="button"
+              variant="outline"
               size="icon-sm"
-              variant={n === currentPage ? "default" : "outline"}
-              aria-current={n === currentPage ? "page" : undefined}
-              onClick={() => setPage(n)}
+              aria-label="Previous page"
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
             >
-              {n}
+              <ChevronLeft className="size-4" />
             </Button>
-          ))}
-        </div>
+            {shownPages.map((n) => (
+              <Button
+                key={n}
+                type="button"
+                size="icon-sm"
+                variant={n === page ? "default" : "outline"}
+                aria-current={n === page ? "page" : undefined}
+                onClick={() => setPage(n)}
+              >
+                {n}
+              </Button>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-10 px-3"
+              disabled={page === totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Page {page} of {totalPages}
+          </p>
+        </nav>
       )}
     </div>
   );

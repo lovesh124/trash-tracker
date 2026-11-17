@@ -8,11 +8,12 @@ import { NetTotals } from "@/components/net-totals";
 import { RecentActivityList } from "@/components/recent-activity-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Balance } from "@/lib/balances";
-import type { ActivityItem, Roommate } from "@/lib/supabase/types";
+import type { Roommate } from "@/lib/supabase/types";
 
 export function ExpensesSection({ roommates }: { roommates: Roommate[] }) {
   const [balances, setBalances] = useState<Balance[]>([]);
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  // Bumped on every reload so Recent Activity refetches its current page too.
+  const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -22,7 +23,7 @@ export function ExpensesSection({ roommates }: { roommates: Roommate[] }) {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setBalances(data.balances);
-      setActivity(data.activity);
+      setRefreshKey((key) => key + 1);
       setError(false);
     } catch {
       setError(true);
@@ -70,7 +71,7 @@ export function ExpensesSection({ roommates }: { roommates: Roommate[] }) {
           <ExpenseForm roommates={roommates} onAdded={load} />
           <BalanceDashboard balances={balances} onSettled={load} />
           <NetTotals balances={balances} />
-          <RecentActivityList activity={activity} onChanged={load} />
+          <RecentActivityList refreshKey={refreshKey} onChanged={load} />
         </>
       )}
     </section>
