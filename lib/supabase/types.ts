@@ -70,10 +70,9 @@ export type ActivityItem =
       payer: Pick<Roommate, "id" | "name">;
       description: string;
       totalCents: number;
-      owerNames: string[];
       category: ExpenseCategory;
-      /** How many of the people who owe on this expense have been paid back (via a settle-up). */
-      paidBack: { settled: number; total: number };
+      /** Everyone who owes the payer on this expense, and whether they've paid it back (via a settle-up). */
+      owers: { name: string; amountCents: number; paidBack: boolean }[];
     }
   | {
       type: "settlement";

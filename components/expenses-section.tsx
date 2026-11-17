@@ -72,8 +72,8 @@ export function ExpensesSection({ roommates }: { roommates: Roommate[] }) {
           <ExpenseForm roommates={roommates} onAdded={load} />
           <BalanceDashboard balances={balances} onSettled={load} />
           <NetTotals balances={balances} />
-          <CategorySpending refreshKey={refreshKey} />
           <RecentActivityList refreshKey={refreshKey} onChanged={load} />
+          <CategorySpending refreshKey={refreshKey} />
         </>
       )}
     </section>

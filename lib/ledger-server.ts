@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import type { SettlementRecord, SplitRecord } from "@/lib/balances";
 
 /** Every expense split and settlement, flattened — the raw ledger behind balances and paid-back status. */
@@ -6,14 +7,24 @@ export async function loadLedger(): Promise<
   { splits: SplitRecord[]; settlements: SettlementRecord[] } | { error: string }
 > {
   const [splitsRes, settlementsRes] = await Promise.all([
-    supabaseServer
-      .from("expense_splits")
-      .select("id, roommate_id, amount_cents, expense:expenses(id, description, created_at, payer_id)"),
-    supabaseServer.from("settlements").select("id, from_roommate_id, to_roommate_id, amount_cents, created_at"),
+    fetchAllRows((from, to) =>
+      supabaseServer
+        .from("expense_splits")
+        .select("id, roommate_id, amount_cents, expense:expenses(id, description, created_at, payer_id)")
+        .order("id")
+        .range(from, to)
+    ),
+    fetchAllRows((from, to) =>
+      supabaseServer
+        .from("settlements")
+        .select("id, from_roommate_id, to_roommate_id, amount_cents, created_at")
+        .order("id")
+        .range(from, to)
+    ),
   ]);
 
-  if (splitsRes.error) return { error: splitsRes.error.message };
-  if (settlementsRes.error) return { error: settlementsRes.error.message };
+  if ("error" in splitsRes) return { error: splitsRes.error };
+  if ("error" in settlementsRes) return { error: settlementsRes.error };
 
   type ExpenseJoin = { id: string; description: string; created_at: string; payer_id: string };
   type SplitRow = {

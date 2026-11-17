@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, HandCoins } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, HandCoins } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,9 @@ const PAGE_WINDOW = 3;
 
 type Filter = "all" | ExpenseCategory;
 
-function PaidBackStatus({ settled, total }: { settled: number; total: number }) {
-  if (total === 0) return null;
+type Ower = Extract<ActivityItem, { type: "expense" }>["owers"][number];
+
+function PaidBackLabel({ settled, total }: { settled: number; total: number }) {
   if (settled === total) {
     return (
       <span className="inline-flex items-center gap-0.5 font-medium text-primary">
@@ -32,6 +33,53 @@ function PaidBackStatus({ settled, total }: { settled: number; total: number }) 
     <span>
       {settled} of {total} paid back
     </span>
+  );
+}
+
+/** Date + paid-back status; tapping the status lists who has and hasn't paid back. */
+function ExpenseMeta({ createdAt, owers }: { createdAt: string; owers: Ower[] }) {
+  const [open, setOpen] = useState(false);
+  const settled = owers.filter((o) => o.paidBack).length;
+  // Whoever still owes first: that's usually what you're looking for.
+  const sorted = [...owers].sort((a, b) => Number(a.paidBack) - Number(b.paidBack));
+
+  return (
+    <>
+      <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+        <span>{formatDateTime(createdAt)}</span>
+        {owers.length > 0 && (
+          <>
+            <span aria-hidden>·</span>
+            <button
+              type="button"
+              aria-expanded={open}
+              onClick={() => setOpen((v) => !v)}
+              className="inline-flex items-center gap-0.5 rounded underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <PaidBackLabel settled={settled} total={owers.length} />
+              <ChevronDown className={cn("size-3 transition-transform", open && "rotate-180")} />
+            </button>
+          </>
+        )}
+      </p>
+      {open && (
+        <ul className="mt-2 flex flex-col gap-1 rounded-lg bg-muted/50 p-2 text-xs">
+          {sorted.map((ower) => (
+            <li key={ower.name} className="flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate">{ower.name}</span>
+              <Money cents={ower.amountCents} />
+              {ower.paidBack ? (
+                <span className="inline-flex w-20 items-center justify-end gap-0.5 font-medium text-primary">
+                  <Check className="size-3" /> Paid back
+                </span>
+              ) : (
+                <span className="w-20 text-right text-muted-foreground">Still owed</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
 
@@ -216,9 +264,9 @@ export function RecentActivityList({
                     <Badge variant="accent" className="tabular-nums">
                       <Money cents={item.totalCents} />
                     </Badge>
-                    {item.owerNames.length > 0 && (
+                    {item.owers.length > 0 && (
                       <span className="text-muted-foreground">
-                        split with {item.owerNames.join(", ")}
+                        split with {item.owers.map((o) => o.name).join(", ")}
                       </span>
                     )}
                   </p>
@@ -232,15 +280,11 @@ export function RecentActivityList({
                     </Badge>
                   </p>
                 )}
-                <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-                  <span>{formatDateTime(item.createdAt)}</span>
-                  {item.type === "expense" && item.paidBack.total > 0 && (
-                    <>
-                      <span aria-hidden>·</span>
-                      <PaidBackStatus {...item.paidBack} />
-                    </>
-                  )}
-                </p>
+                {item.type === "expense" ? (
+                  <ExpenseMeta createdAt={item.createdAt} owers={item.owers} />
+                ) : (
+                  <p className="text-xs text-muted-foreground">{formatDateTime(item.createdAt)}</p>
+                )}
               </div>
               <UndoButton
                 type={item.type}

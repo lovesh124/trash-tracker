@@ -1,4 +1,5 @@
 import { supabaseServer } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { getNextRoommate, getRoommateAfter } from "@/lib/turn";
 import type { ChoreLogWithRoommate, CurrentTurn, Roommate } from "@/lib/supabase/types";
 
@@ -18,7 +19,14 @@ export async function getFairNextRoommate<R extends { id: string }>(
   roommates: R[]
 ): Promise<{ roommate: R } | { error: string }> {
   const [countedRes, beforeRes] = await Promise.all([
-    supabaseServer.from(table).select("roommate_id").gte("taken_at", ROTATION_COUNTS_SINCE),
+    fetchAllRows((from, to) =>
+      supabaseServer
+        .from(table)
+        .select("roommate_id")
+        .gte("taken_at", ROTATION_COUNTS_SINCE)
+        .order("id")
+        .range(from, to)
+    ),
     supabaseServer
       .from(table)
       .select("roommate_id")
@@ -28,7 +36,7 @@ export async function getFairNextRoommate<R extends { id: string }>(
       .maybeSingle(),
   ]);
 
-  if (countedRes.error) return { error: countedRes.error.message };
+  if ("error" in countedRes) return { error: countedRes.error };
   if (beforeRes.error) return { error: beforeRes.error.message };
 
   const startRoommate = getRoommateAfter(roommates, beforeRes.data?.roommate_id ?? null);

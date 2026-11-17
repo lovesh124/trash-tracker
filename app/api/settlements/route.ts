@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PAYMENT_PROOF_BUCKET, supabaseServer } from "@/lib/supabase/server";
-import { computeBalances, findPairBalance, type DebtEntry } from "@/lib/balances";
+import { computeBalances, findPairBalance, ledgerToDebts } from "@/lib/balances";
+import { loadLedger } from "@/lib/ledger-server";
 import { PhotoValidationError, uploadProofPhoto } from "@/lib/supabase/photo-upload";
 import type { Roommate } from "@/lib/supabase/types";
 
@@ -20,22 +21,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Can't settle a debt with yourself" }, { status: 400 });
   }
 
-  const [roommatesRes, splitsRes, settlementsRes] = await Promise.all([
+  const [roommatesRes, ledger] = await Promise.all([
     supabaseServer.from("roommates").select("id, name"),
-    supabaseServer
-      .from("expense_splits")
-      .select("roommate_id, amount_cents, expense:expenses(payer_id)"),
-    supabaseServer.from("settlements").select("from_roommate_id, to_roommate_id, amount_cents"),
+    loadLedger(),
   ]);
 
   if (roommatesRes.error) {
     return NextResponse.json({ error: roommatesRes.error.message }, { status: 500 });
   }
-  if (splitsRes.error) {
-    return NextResponse.json({ error: splitsRes.error.message }, { status: 500 });
-  }
-  if (settlementsRes.error) {
-    return NextResponse.json({ error: settlementsRes.error.message }, { status: 500 });
+  if ("error" in ledger) {
+    return NextResponse.json({ error: ledger.error }, { status: 500 });
   }
 
   const roommatesById = new Map<string, Pick<Roommate, "id" | "name">>(
@@ -46,27 +41,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unknown roommate" }, { status: 400 });
   }
 
-  type SplitRow = {
-    roommate_id: string;
-    amount_cents: number;
-    expense: { payer_id: string } | { payer_id: string }[] | null;
-  };
-
-  const debts: DebtEntry[] = (splitsRes.data as SplitRow[]).flatMap((split) => {
-    const expense = Array.isArray(split.expense) ? split.expense[0] : split.expense;
-    if (!expense) return [];
-    return [{ owerId: split.roommate_id, creditorId: expense.payer_id, amountCents: split.amount_cents }];
-  });
-
-  for (const settlement of settlementsRes.data) {
-    debts.push({
-      owerId: settlement.to_roommate_id,
-      creditorId: settlement.from_roommate_id,
-      amountCents: settlement.amount_cents,
-    });
-  }
-
-  const balances = computeBalances(debts, roommatesById);
+  const balances = computeBalances(ledgerToDebts(ledger.splits, ledger.settlements), roommatesById);
   const pairBalance = findPairBalance(balances, fromRoommateId, toRoommateId);
 
   if (!pairBalance) {

@@ -214,19 +214,49 @@ export function buildPairEntries(
 }
 
 /**
- * Ids of the expense splits that have been paid back. "Pay Now" always settles
- * the whole balance between two people, so once a pair's running balance is
- * back to $0, every split between them up to that point is paid — whatever
- * its category. (Offsetting expenses that net to exactly $0 also count: the
- * debt is genuinely cleared.)
+ * Ids of the expense splits that have been paid back. Within each pair, debts
+ * are matched oldest-first: anything owed the opposite way (a settle-up
+ * payment, or an expense the other person paid for) cancels out the oldest
+ * outstanding debts first. A split is paid back once it's fully cancelled.
+ * Because "Pay Now" always settles the whole balance, a settle-up clears every
+ * earlier split between the pair — whatever its category — and this also
+ * handles balances that flip direction without ever landing on exactly $0.
  */
 export function settledSplitIds(splits: SplitRecord[], settlements: SettlementRecord[]): Set<string> {
   const settled = new Set<string>();
-  for (const [key, entries] of buildPairEntries(splits, settlements)) {
-    const fromId = key.split(":")[0];
-    for (const entry of splitAtLastSettleUp(withRunningBalance(entries, fromId)).settled) {
-      if (entry.type === "expense") settled.add(entry.id.slice("expense-".length));
+  const markSettled = (entry: PairHistoryEntry) => {
+    if (entry.type === "expense") settled.add(entry.id.slice("expense-".length));
+  };
+
+  for (const entries of buildPairEntries(splits, settlements).values()) {
+    // Outstanding debts, oldest first. They're always all owed in one direction:
+    // anything owed the other way is used up cancelling them before it's queued.
+    const outstanding: { entry: PairHistoryEntry; remaining: number }[] = [];
+
+    for (const entry of entries) {
+      let amount = entry.amountCents;
+      while (amount > 0 && outstanding.length > 0 && outstanding[0].entry.owerId !== entry.owerId) {
+        const oldest = outstanding[0];
+        const used = Math.min(amount, oldest.remaining);
+        oldest.remaining -= used;
+        amount -= used;
+        if (oldest.remaining === 0) {
+          outstanding.shift();
+          markSettled(oldest.entry);
+        }
+      }
+      // Fully used up cancelling older debts, so this one is settled too.
+      if (amount === 0) markSettled(entry);
+      else outstanding.push({ entry, remaining: amount });
     }
   }
   return settled;
+}
+
+/** The ledger as debts for computeBalances: a settlement is a debt in the opposite direction of the payment. */
+export function ledgerToDebts(splits: SplitRecord[], settlements: SettlementRecord[]): DebtEntry[] {
+  return [
+    ...splits.map((s) => ({ owerId: s.owerId, creditorId: s.payerId, amountCents: s.amountCents })),
+    ...settlements.map((s) => ({ owerId: s.toId, creditorId: s.fromId, amountCents: s.amountCents })),
+  ];
 }

@@ -87,15 +87,13 @@ export async function GET(request: Request) {
         description: expense.description,
         // Older expenses have no stored total; the sum of what's owed is the best we have.
         totalCents: expense.total_cents ?? expense.splits.reduce((sum, s) => sum + s.amount_cents, 0),
-        owerNames: expense.splits.flatMap((s) => {
-          const roommate = one(s.roommate);
-          return roommate ? [roommate.name] : [];
-        }),
         category: isExpenseCategory(expense.category) ? expense.category : "other",
-        paidBack: {
-          settled: expense.splits.filter((s) => settled.has(s.id)).length,
-          total: expense.splits.length,
-        },
+        owers: expense.splits.flatMap((s) => {
+          const roommate = one(s.roommate);
+          return roommate
+            ? [{ name: roommate.name, amountCents: s.amount_cents, paidBack: settled.has(s.id) }]
+            : [];
+        }),
       },
     ];
   });
